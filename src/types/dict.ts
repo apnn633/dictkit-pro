@@ -68,6 +68,14 @@ export interface RemoteConfig {
   owner: string;
   branch: string;
   basePath: string;
+  /**
+   * 是否每本词典对应一个独立仓库。
+   * - false（缺省）：统一仓库，路径拼接为 `${basePath}/${repo}/${logicalPath}`
+   *   （一个仓库内按 repo 子目录存放各词典数据）
+   * - true：每词典独立仓库，repo 字段即仓库名，路径拼接为 `${basePath}/${logicalPath}`
+   *   （仓库本身就是该词典，无需再加 repo 子目录）
+   */
+  perRepo?: boolean;
 }
 
 /** Site metadata. */

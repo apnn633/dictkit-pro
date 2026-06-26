@@ -44,7 +44,11 @@ export function getCandidateUrls(repo: string, logicalPath: string): Candidate[]
         url: `${localBase}/${logicalPath}`,
       });
     } else if (source.type === "remote" && remote) {
-      const baseRemotePath = `${remote.basePath}/${repo}/${logicalPath}`;
+      // perRepo=true：每词典独立仓库，repo 即仓库名，路径不再加 repo 子目录
+      // perRepo=false（缺省）：统一仓库，路径含 repo 子目录
+      const baseRemotePath = remote.perRepo
+        ? `${remote.basePath}/${logicalPath}`
+        : `${remote.basePath}/${repo}/${logicalPath}`;
       out.push({
         source,
         url: buildRemoteUrl(source.url, remote.owner, repo, remote.branch, baseRemotePath),
