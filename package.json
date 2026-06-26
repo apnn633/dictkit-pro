@@ -15,13 +15,13 @@
   "keywords": ["汉语词典", "字典", "拼音检索", "王力古汉语字典", "规范汉字表"],
   "author": "dictkit-pro",
   "license": "MIT",
-  "homepage": "https://dictkit.github.io/dictkit-pro/",
+  "homepage": "https://apnn633.github.io/dictkit-pro/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dictkit/dictkit-pro.git"
+    "url": "https://github.com/apnn633/dictkit-pro.git"
   },
   "bugs": {
-    "url": "https://github.com/dictkit/dictkit-pro/issues"
+    "url": "https://github.com/apnn633/dictkit-pro/issues"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
