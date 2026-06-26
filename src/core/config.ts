@@ -63,7 +63,7 @@ export async function loadConfig(): Promise<DictConfig> {
   // 1) 本地（dev 环境或自带 data 的部署）
   try {
     const config = await fetchJSON(LOCAL_CONFIG_PATH);
-    applyConfig(config);
+    applyConfig(config, false);
     return config;
   } catch (err) {
     console.warn(`本地配置加载失败，尝试远程：`, err);
@@ -77,7 +77,7 @@ export async function loadConfig(): Promise<DictConfig> {
   for (const url of candidates) {
     try {
       const config = await fetchJSON(url);
-      applyConfig(config);
+      applyConfig(config, true);
       console.info(`配置已从远程加载：${url}`);
       return config;
     } catch (err) {
@@ -89,7 +89,7 @@ export async function loadConfig(): Promise<DictConfig> {
 }
 
 /** 将原始配置写入全局 state。 */
-function applyConfig(config: DictConfig): void {
+function applyConfig(config: DictConfig, fromRemote = false): void {
   state.config = config;
   state.defaults = config.defaults || ({} as Defaults);
   state.files = config.files || [];
@@ -97,6 +97,14 @@ function applyConfig(config: DictConfig): void {
   state.dataSources = (config.dataSources || [])
     .slice()
     .sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99));
+
+  // 若配置是从远程加载的，说明本部署无本地 data 目录（如 GitHub Pages 发布版）。
+  // 此时 local 数据源的每个请求都会命中站点自身的 404 页（GitHub Pages 对不存在的
+  // 路径可能返回 200+HTML），既浪费往返又可能误判。移除 local 来源，让 data-loader
+  // 直接走远程镜像。
+  if (fromRemote) {
+    state.dataSources = state.dataSources.filter(s => s.type !== "local");
+  }
 
   // 构建字典注册表 —— 附上 logo 路径与空的数据槽
   const dicts: Record<string, DictMeta> = {};
