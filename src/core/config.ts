@@ -60,13 +60,17 @@ async function fetchJSON(url: string): Promise<DictConfig> {
  * 填充 state.config / dicts / files / fonts / dataSources / defaults。
  */
 export async function loadConfig(): Promise<DictConfig> {
-  // 1) 本地（dev 环境或自带 data 的部署）
-  try {
-    const config = await fetchJSON(LOCAL_CONFIG_PATH);
-    applyConfig(config, false);
-    return config;
-  } catch (err) {
-    console.warn(`本地配置加载失败，尝试远程：`, err);
+  // 1) 本地（仅 dev 环境：Vite dev server 下 import.meta.env.DEV 为 true，
+  //    且 data/ 符号链接存在时可用）。发布版（PROD）直接跳过，避免命中
+  //    GitHub Pages 对不存在路径返回 200+HTML 的伪成功响应。
+  if (import.meta.env.DEV) {
+    try {
+      const config = await fetchJSON(LOCAL_CONFIG_PATH);
+      applyConfig(config, false);
+      return config;
+    } catch (err) {
+      console.warn(`本地配置加载失败，尝试远程：`, err);
+    }
   }
   // 2) 远程候选（发布到 GitHub Pages、无本地 data 时）
   const candidates = remoteConfigCandidates();

@@ -96,7 +96,9 @@ body {
 .search-buttons {
     display: flex;
     gap: 4px;
-    flex: 0 0 auto;
+    /* 允许按钮组收缩并在空间不足时整体换行到下一行，避免溢出容器 */
+    flex: 0 1 auto;
+    min-width: 0;
     position: relative;
 }
 
@@ -492,6 +494,8 @@ body {
 @media (max-width: 720px) {
     .search-container { padding: 8px 10px; gap: 6px; }
     .search-filter { order: 5; width: 100%; overflow-x: auto; }
+    /* 按钮组在窄屏占满整行并横向滚动，避免搜索按钮被挤出布局 */
+    .search-buttons { order: 6; width: 100%; overflow-x: auto; padding-bottom: 2px; }
     .filter-chip { white-space: nowrap; }
     .viewer-frame { padding: 24px 48px; }
     .nav-arrow { width: 48px; }
