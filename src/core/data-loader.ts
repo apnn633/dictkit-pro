@@ -109,10 +109,24 @@ export function clearProxyCache(): void {
   for (const k of Object.keys(state.proxyState)) {
     state.proxyState[k] = { lastSuccess: null, lastSuccessTime: 0, failed: new Set<string>() };
   }
+  // 一并清空路径熔断集合，让切换数据源后能重新尝试
+  failedPaths.clear();
 }
+
+/**
+ * 已彻底失败（所有源都试过且都失败）的 logicalPath 集合。
+ * 同一会话内不重复请求，避免配置错误时无谓地刷请求。
+ * clearDictCache / clearProxyCache 时清空（切词典后重置）。
+ */
+const failedPaths = new Set<string>();
 
 /** 从最佳可用来源加载一个 JSON 数据文件。 */
 export async function loadJSON(repo: string, logicalPath: string, kind = "metadata"): Promise<unknown> {
+  // 熔断：若该路径已彻底失败过，直接抛错，不再发请求
+  const failKey = `${repo}/${logicalPath}`;
+  if (failedPaths.has(failKey)) {
+    throw new Error(`路径已熔断（所有来源均失败）：${failKey}`);
+  }
   const candidates = getCandidateUrls(repo, logicalPath);
   let current = getBestProxy(candidates, kind);
   while (current) {
@@ -138,6 +152,8 @@ export async function loadJSON(repo: string, logicalPath: string, kind = "metada
     markFail(current, kind);
     current = getBestProxy(candidates, kind);
   }
+  // 所有来源均失败：加入熔断集合，同会话不再重试
+  failedPaths.add(failKey);
   throw new Error(`所有来源加载失败：${repo}/${logicalPath}`);
 }
 

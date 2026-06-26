@@ -14,6 +14,13 @@ const IMAGE_CACHE_CONFIG = {
   loadTimeoutMs: 15_000,
 };
 
+/**
+ * 已彻底失败（所有来源都试过）的图片 cacheKey 集合。
+ * 同一会话内不重复请求，避免配置错误时刷请求。
+ * clearDictCache 时清空（切词典后重置）。
+ */
+const failedImages = new Set<string>();
+
 /** 根据页码解析其逻辑图片路径。 */
 export function getImagePath(page: string, repo?: string | null): string {
   const r = repo ?? state.currentDict;
@@ -113,6 +120,8 @@ async function loadImageFromSources(repo: string, imagePath: string, signal: Abo
       console.warn(`image load fail [${candidate.source.id}] ${repo}/${imagePath}`, err);
     }
   }
+  // 所有来源均失败：记入熔断集合，同会话不再重试该图
+  failedImages.add(cacheKey(repo, imagePath));
   throw new Error(`所有来源图片加载失败：${repo}/${imagePath}`);
 }
 
@@ -123,6 +132,10 @@ export async function getImageUrl(repo: string, imagePath: string): Promise<stri
     if (url != null) return url;
   }
   const key = cacheKey(repo, imagePath);
+  // 熔断：若该图已彻底失败过，直接抛错，不再发请求
+  if (failedImages.has(key)) {
+    throw new Error(`图片已熔断（所有来源均失败）：${repo}/${imagePath}`);
+  }
   const existing = state.loadingPromises.get(key);
   if (existing) return existing;
 
@@ -195,5 +208,9 @@ export function clearDictCache(repo: string): void {
   }
   for (const key of Array.from(state.preloadedImages)) {
     if (key.startsWith(prefix)) state.preloadedImages.delete(key);
+  }
+  // 一并清除该词典的图片熔断记录，让切换数据源后能重新尝试
+  for (const key of Array.from(failedImages)) {
+    if (key.startsWith(prefix)) failedImages.delete(key);
   }
 }
