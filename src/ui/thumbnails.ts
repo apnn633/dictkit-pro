@@ -64,7 +64,8 @@ async function loadThumbImage(item: HTMLElement, page: string): Promise<void> {
     if (!item.isConnected) return;
     img.src = url;
   } catch (err) {
-    // getImageUrl 在字典切换被 abort 时会抛 AbortError，此处静默处理
+    // getImageUrl 在字典切换被 abort 时会抛 AbortError，属正常流程，静默忽略
+    if (err instanceof Error && err.name === "AbortError") return;
     console.warn("thumb load failed:", err);
     item.classList.add("thumb-error");
   }
