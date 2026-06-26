@@ -122,9 +122,10 @@ export async function loadJSON(repo: string, logicalPath: string, kind = "metada
       const res = await fetch(current.url, { signal: controller.signal });
       if (res.ok) {
         const data = await res.json();
-        // 轻量校验：res.ok 但内容非对象（如 HTML 404 页）视为失败
-        if (data === null || typeof data !== "object" || Array.isArray(data)) {
-          throw new Error("响应非对象");
+        // 轻量校验：res.ok 但内容是原始值或 null（如 HTML 404 页被当作 JSON 解析）
+        // 允许对象和数组（toc.json 顶层是数组），仅拒绝 string/number/boolean/null
+        if (data === null || typeof data !== "object") {
+          throw new Error("响应非 JSON 对象/数组");
         }
         markSuccess(current, kind);
         return data;
