@@ -51,27 +51,32 @@ export function initTouchInteraction(): void {
 
     frame.addEventListener("touchmove", e => {
         if (ts.mode === "pan") {
-            e.preventDefault();
             const t = e.touches[0];
+            if (!t) return;
+            e.preventDefault();
             frame.scrollLeft = ts.sScrollX - (t.clientX - ts.sx);
             frame.scrollTop = ts.sScrollY - (t.clientY - ts.sy);
             ts.moved = true;
         } else if (ts.mode === "swipe") {
             const t = e.touches[0];
+            if (!t) return;
             ts.moved = true;
             // 明显水平方向时阻止页面纵向滚动
             if (Math.abs(t.clientX - ts.sx) > Math.abs(t.clientY - ts.sy)) {
                 e.preventDefault();
             }
         } else if (ts.mode === "pinch") {
+            const t0 = e.touches[0];
+            const t1 = e.touches[1];
+            if (!t0 || !t1) return;
             e.preventDefault();
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dx = t0.clientX - t1.clientX;
+            const dy = t0.clientY - t1.clientY;
             const dist = Math.hypot(dx, dy);
             if (ts.sDist > 0) {
                 // 锚定到双指中点，使两指之间的内容保持不动
-                const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const mx = (t0.clientX + t1.clientX) / 2;
+                const my = (t0.clientY + t1.clientY) / 2;
                 zoomTowardPoint(frame, mx, my, ts.sZoom * (dist / ts.sDist) - state.zoomLevel);
             }
         }
