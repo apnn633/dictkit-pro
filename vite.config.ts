@@ -55,8 +55,9 @@ export default defineConfig({
         start_url: "./",
         scope: "./",
         icons: [
-          { src: "assets/logos/logo2.png", sizes: "192x192", type: "image/png" },
-          { src: "assets/logos/logo2.png", sizes: "512x512", type: "image/png" },
+          { src: "assets/logos/logo-192.png", sizes: "192x192", type: "image/png" },
+          { src: "assets/logos/logo-512.png", sizes: "512x512", type: "image/png" },
+          { src: "assets/logos/logo-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
       workbox: {
