@@ -11,6 +11,8 @@ import { trimHistoryToLimit, renderHistory } from "./history.ts";
 
 // viewer 通过动态 import 加载以打破循环依赖（字面量路径，Vite 可静态分析）
 
+let initialized = false;
+
 /** 持久化键名。 */
 const KEYS = {
   font: "fontId",
@@ -39,15 +41,10 @@ function applyFont(fontId: string): void {
 /**
  * M14：转义 CSS 标识符中可能破坏规则的字符（引号、反斜杠、换行）。
  * 自定义字体名来自用户上传的文件名，未转义会让 @font-face / font-family 解析失败。
- * 用 CSS.escape（现代浏览器均支持）兜底；缺省回退到手工替换引号与反斜杠。
+ * L1：仅用正则替换，避免对已转义结果再调用 CSS.escape 造成双重转义。
  */
 function cssEscapeString(s: string): string {
-  const safe = String(s).replace(/['"\\\n\r]/g, ch => `\\${ch}`);
-  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-    // CSS.escape 输出可安全用作标识符；外层仍由调用方补单引号
-    return CSS.escape(safe);
-  }
-  return safe;
+  return String(s).replace(/['"\\\n\r]/g, ch => `\\${ch}`);
 }
 
 /** 注入或更新自定义字体的 @font-face（每次上传都覆盖，确保二次上传生效）。 */
@@ -79,11 +76,17 @@ function applyTheme(themeId: string): void {
   document.documentElement.setAttribute("data-theme", themeId);
 }
 
-/** 应用版式变更：刷新图片。 */
+/** 应用版式变更：刷新图片。失败时回滚 state 以保持一致性。 */
 async function applySpreadChange(spread: boolean): Promise<void> {
+  const old = state.isSpreadMode;
   state.isSpreadMode = spread;
-  const mod = await import("../viewer/viewer.ts");
-  await mod.showImage();
+  try {
+    const mod = await import("../viewer/viewer.ts");
+    await mod.showImage();
+  } catch (err) {
+    state.isSpreadMode = old;
+    throw err;
+  }
 }
 
 /** 同步应用适应模式属性到 DOM 与 state（state.fitMode 为单一真源）。 */
@@ -148,7 +151,10 @@ function buildPanel(): void {
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      store.set(KEYS.customFont, { name: file.name, url: dataUrl });
+      if (!store.set(KEYS.customFont, { name: file.name, url: dataUrl })) {
+        toast(t("storeWriteFailed"), "warn");
+        return;
+      }
       applyFont(store.get<string>(KEYS.font, state.defaults.fontId || ""));
       toast(t("fontUploaded"), "success");
     };
@@ -241,7 +247,7 @@ function buildPanel(): void {
   historyLimitInput.value = String(store.get<number>(KEYS.historyLimit, 0));
   historyLimitInput.addEventListener("change", () => {
     const raw = Number(historyLimitInput.value);
-    const val = Number.isFinite(raw) && raw >= 0 ? Math.floor(raw) : 0;
+    const val = Number.isFinite(raw) && raw >= 0 ? Math.min(Math.floor(raw), 10000) : 0;
     historyLimitInput.value = String(val);
     store.set(KEYS.historyLimit, val);
     // 立即按新上限裁剪已存在的阅读历史，并刷新历史侧栏（若正打开）
@@ -289,6 +295,8 @@ function wireToggle(): void {
 
 /** 初始化设置面板。 */
 export function initSettings(): void {
+  if (initialized) return;
+  initialized = true;
   // 迁移 v2 命名空间下的旧键
   store.migrate("fontId", KEYS.font);
   store.migrate("themeId", KEYS.theme);

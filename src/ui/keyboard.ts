@@ -19,11 +19,15 @@ async function viewer(): Promise<ViewerApi> {
 }
 
 /** 当前活动元素是否处于可编辑状态。 */
-function isEditable(el: Element | null): boolean {
-  if (!el) return false;
-  const tag = el.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA") return true;
-  return (el as HTMLElement).isContentEditable;
+function isEditable(el: EventTarget | null): boolean {
+  // L2：仅屏蔽可编辑文本类控件，避免过度屏蔽 checkbox/radio/button 等
+  if (!(el instanceof HTMLElement)) return false;
+  if (el.isContentEditable) return true;
+  if (el instanceof HTMLTextAreaElement) return true;
+  if (el instanceof HTMLInputElement) {
+    return ["text", "search", "url", "password", "number"].includes(el.type);
+  }
+  return false;
 }
 
 /** 关闭所有浮层与侧栏。 */
@@ -47,23 +51,31 @@ export function closeAllOverlays(): void {
  *   原先 +1 会跳到下一个奇数页导致对开错位。
  * - M2：切换后写入持久化键，与设置面板的下拉变更共用同一键名 "spreadMode"。
  */
+// L10：异步切换期间的重入闸门，避免连按 D 导致状态错乱
+let toggling = false;
 async function toggleSpreadViaKeyboard(): Promise<void> {
-  state.isSpreadMode = !state.isSpreadMode;
-  if (state.isSpreadMode) {
-    const page = state.currentPage;
-    if (isContentPage(page)) {
-      const num = parseInt(page, 10);
-      if (num > 1 && num % 2 === 1) {
-        setCurrentPage(shiftPage(page, -1, state.currentDict));
+  if (toggling) return;
+  toggling = true;
+  try {
+    state.isSpreadMode = !state.isSpreadMode;
+    if (state.isSpreadMode) {
+      const page = state.currentPage;
+      if (isContentPage(page)) {
+        const num = parseInt(page, 10);
+        if (num > 1 && num % 2 === 1) {
+          setCurrentPage(shiftPage(page, -1, state.currentDict));
+        }
       }
     }
+    store.set("spreadMode", state.isSpreadMode);
+    const v = await viewer();
+    await v.showImage();
+    // 同步设置面板中的版式下拉
+    const sel = byId<HTMLSelectElement>("spreadModeSelect");
+    if (sel) sel.value = state.isSpreadMode ? "1" : "0";
+  } finally {
+    toggling = false;
   }
-  store.set("spreadMode", state.isSpreadMode);
-  const v = await viewer();
-  await v.showImage();
-  // 同步设置面板中的版式下拉
-  const sel = byId<HTMLSelectElement>("spreadModeSelect");
-  if (sel) sel.value = state.isSpreadMode ? "1" : "0";
 }
 
 /** 初始化全局键盘快捷键。 */
@@ -82,6 +94,8 @@ export function initKeyboardShortcuts(): void {
     const meta = e.ctrlKey || e.metaKey;
     // 带修饰键的组合（除 Escape）保留给浏览器
     if (meta && e.key !== "Escape") return;
+    // L1：方向导航键带 Shift/Alt 时保留给浏览器（文本选择、Alt+方向后退等）
+    if ((e.shiftKey || e.altKey) && ["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) return;
 
     // 用分发模式让每个分支各自负责 preventDefault 与异步错误处理（M16）。
     // 异步分支统一 .catch 到 console.warn，避免 unhandledrejection。

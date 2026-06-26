@@ -34,7 +34,7 @@ export interface LocalDataSource {
   name: string;
   priority: number;
   type: "local";
-  base: string;
+  base?: string;
 }
 
 /** Remote mirror data source (GitHub Raw, jsDelivr, etc.). */
@@ -104,10 +104,10 @@ export interface Defaults {
 /** Top-level dicts.json shape. */
 export interface DictConfig {
   meta: SiteMeta;
-  dataSources: DataSource[];
+  dataSources?: DataSource[];
   remote: RemoteConfig;
   fonts: FontOption[];
-  files: SearchFile[];
+  files?: SearchFile[];
   dicts: Array<Omit<DictMeta, "logo" | "pinyin" | "chars" | "words" | "toc">>;
   defaults: Defaults;
 }

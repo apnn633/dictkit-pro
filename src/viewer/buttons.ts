@@ -20,6 +20,7 @@ export function initViewerButtons(): void {
     if (prevBtn) {
         prevBtn.addEventListener("click", () => void changeImage(false).catch(err => console.warn("changeImage failed:", err)));
         prevBtn.addEventListener("keydown", e => {
+            if (e.repeat) return;
             if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 void changeImage(false).catch(err => console.warn("changeImage failed:", err));
@@ -29,6 +30,7 @@ export function initViewerButtons(): void {
     if (nextBtn) {
         nextBtn.addEventListener("click", () => void changeImage(true).catch(err => console.warn("changeImage failed:", err)));
         nextBtn.addEventListener("keydown", e => {
+            if (e.repeat) return;
             if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 void changeImage(true).catch(err => console.warn("changeImage failed:", err));
@@ -43,11 +45,18 @@ export function initViewerButtons(): void {
     byId("fitWidth")?.addEventListener("click", () => void toggleFitWidth().catch(err => console.warn("toggleFitWidth failed:", err)));
     byId("rotateBtn")?.addEventListener("click", rotate);
 
-    document.addEventListener("fullscreenchange", () => {
+    const fullscreenBtn = byId("fullscreenBtn");
+    const onFullscreenChange = () => {
         const c = byId("resultContainer");
         if (!c) return;
         // 仅当全屏的是本查看器容器时才加 fullscreen 类，
         // 避免页面其他元素（如视频）进入全屏时误加。
-        c.classList.toggle("fullscreen", document.fullscreenElement === c);
-    });
+        const isFs = document.fullscreenElement === c;
+        c.classList.toggle("fullscreen", isFs);
+        // 同步按钮 aria-pressed 状态
+        fullscreenBtn?.setAttribute("aria-pressed", String(isFs));
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    // 兼容 Safari 的 webkit 前缀
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
 }

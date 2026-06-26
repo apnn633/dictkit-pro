@@ -32,9 +32,9 @@ export async function showImage(limit = 0): Promise<void> {
     const container = byId("resultContainer");
     const token = nextImageLoadToken();
 
-    container?.classList.add("is-loading");
-    setStatus(t("loading"));
     try {
+        container?.classList.add("is-loading");
+        setStatus(t("loading"));
         syncSpreadClass();
 
         if (isCompareActive()) {
@@ -58,6 +58,11 @@ export async function showImage(limit = 0): Promise<void> {
             updatePageIndicator();
             applyZoomToImages();
             updateURLState();
+            // 翻页/模式切换后重置滚动位置（仅放大状态下需要，避免上一页的偏移残留）
+            if (state.zoomLevel > 100) {
+                const frame = document.querySelector<HTMLElement>(".viewer-frame");
+                if (frame) { frame.scrollLeft = 0; frame.scrollTop = 0; }
+            }
         }
     }
 }
@@ -70,8 +75,16 @@ function setStatus(msg: string): void {
 function syncSpreadClass(): void {
     const el = byId("resultContainer");
     if (!el) return;
-    el.classList.toggle("spread-mode", isSpreadActive());
-    el.classList.toggle("compare-mode", isCompareActive());
+    // 记录旧模式，检测到模式实际变化时重置缩放，避免上一模式的缩放/偏移残留
+    const wasSpread = el.classList.contains("spread-mode");
+    const wasCompare = el.classList.contains("compare-mode");
+    const willSpread = isSpreadActive();
+    const willCompare = isCompareActive();
+    el.classList.toggle("spread-mode", willSpread);
+    el.classList.toggle("compare-mode", willCompare);
+    if (wasSpread !== willSpread || wasCompare !== willCompare) {
+        resetZoom();
+    }
 }
 
 async function loadSingleView(
@@ -109,8 +122,10 @@ async function loadSpreadView(
         if (img) { img.src = leftUrl; img.style.opacity = "1"; }
         if (img2) { img2.src = rightUrl; img2.style.opacity = "1"; }
     } else {
-        const url = await preloadPage(state.currentPage, 0);
-        const url2 = await getSecondPageUrl();
+        const [url, url2] = await Promise.all([
+            preloadPage(state.currentPage, 0),
+            getSecondPageUrl(),
+        ]);
         if (token !== state.imageLoadToken) return;
         if (img) { img.src = url; img.style.opacity = "1"; }
         if (img2) { img2.src = url2 || EMPTY_IMAGE; img2.style.opacity = "1"; }
@@ -136,6 +151,7 @@ async function loadCompareView(
     token: number,
 ): Promise<void> {
     const url = await preloadPage(state.currentPage, 0);
+    if (token !== state.imageLoadToken) return;
     let cmpUrl: string | null = null;
     try {
         const cmpRepo = state.compareDict;
@@ -297,8 +313,19 @@ export function toggleFullscreen(): void {
     const container = byId("resultContainer");
     if (!container) return;
     if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-    } else if (container.requestFullscreen) {
-        container.requestFullscreen().catch(() => {});
+        // 兼容 Safari 的 webkit 前缀
+        const ex: (() => Promise<void>) | undefined =
+            document.exitFullscreen || (document as any).webkitExitFullscreen;
+        if (ex) {
+            const ret = ex.call(document);
+            if (ret && typeof (ret as any).catch === "function") (ret as Promise<void>).catch(() => {});
+        }
+    } else {
+        const rq: (() => Promise<void>) | undefined =
+            container.requestFullscreen || (container as any).webkitRequestFullscreen;
+        if (rq) {
+            const ret = rq.call(container);
+            if (ret && typeof (ret as any).catch === "function") (ret as Promise<void>).catch(() => {});
+        }
     }
 }

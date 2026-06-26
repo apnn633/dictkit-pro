@@ -1,6 +1,7 @@
 // ============================================================
 // utils/url.ts — URL / page helpers
 // ============================================================
+import { stripPage } from "./dom.ts";
 
 /** Read query params into a plain object. */
 export function getURLParams(): Record<string, string> {
@@ -18,8 +19,9 @@ export function updateURLParams(params: Record<string, string | null | undefined
 }
 
 /** Strip leading zeros from a numeric page id (keeps A/C prefix intact). */
-export function stripLeadingZeros(page: string): string {
-  return String(page).replace(/^(\D*)0+(\d)/, "$1$2");
+export function stripLeadingZeros(page: string | number): string {
+  // M11：复用 dom.ts 的 stripPage，避免重复实现
+  return stripPage(String(page));
 }
 
 /** Trigger a client-side download of a text file. */
@@ -32,5 +34,6 @@ export function downloadText(filename: string, content: string, mime = "applicat
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // M12：延迟 revoke，避免浏览器尚未完成下载就释放 blob URL
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

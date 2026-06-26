@@ -12,7 +12,7 @@ export const state: AppState = {
   files: [],            // 检索文件定义
   fonts: [],            // 字体选项
   dataSources: [],      // 已排序的来源候选（local 优先）
-  defaults: {} as Defaults,
+  defaults: {} as Partial<Defaults>,
 
   // 运行时
   currentDict: null,    // 当前字典 repo id
@@ -46,7 +46,7 @@ export const state: AppState = {
 
 /** 设置当前页码。 */
 export function setCurrentPage(page: string): void {
-  state.currentPage = String(page);
+  state.currentPage = page;
 }
 
 /** 自增并返回图片加载令牌（用于作废进行中的旧加载请求）。 */

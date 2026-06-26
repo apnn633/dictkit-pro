@@ -16,7 +16,7 @@ type TocLeaf = { title: string; page: string };
 type TocItem = { title: string; page: string; more?: Array<{ title: string; page: string }> };
 
 /** 构建词典目录侧栏。 */
-export async function setupSidebar(): Promise<void> {
+export function setupSidebar(): void {
   const container = byId("bookmarksList");
   if (!container) return;
   container.innerHTML = "";
@@ -96,9 +96,13 @@ export function initSidebarToggle(): void {
     const willOpen = !popup.classList.contains("active");
     popup.classList.toggle("active");
     document.body.style.overflow = willOpen ? "hidden" : "";
-    if (willOpen) void setupSidebar().catch(err => console.warn("setupSidebar failed:", err));
+    if (willOpen) setupSidebar();
   });
   byId("closeSidebarPopup")?.addEventListener("click", closeSidebar);
+  // M5：ESC 关闭目录侧栏（closeSidebar 内已恢复 body overflow）
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeSidebar();
+  });
 }
 
 /** 保存当前词典的最后阅读位置。 */
@@ -107,6 +111,12 @@ export function saveLastPosition(): void {
   if (!repo) return;
   const all = store.get<Record<string, { page: string; ts: number }>>(KEY, {});
   all[repo] = { page: state.currentPage, ts: Date.now() };
+  // L12：记录词典数上限 50，超出则按 ts 删除最旧，避免无限增长
+  const keys = Object.keys(all);
+  if (keys.length > 50) {
+    const sorted = keys.sort((a, b) => all[a].ts - all[b].ts);
+    for (let i = 0; i < keys.length - 50; i++) delete all[sorted[i]];
+  }
   store.set(KEY, all);
 }
 

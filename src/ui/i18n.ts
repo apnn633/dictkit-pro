@@ -210,8 +210,10 @@ let initialized = false;
 export function t(key: string, ...args: unknown[]): string {
   const table = translations[currentLang] || translations.zh;
   let str = table[key] ?? translations.zh[key] ?? key;
-  args.forEach((arg, i) => {
-    str = str.replaceAll(`{${i}}`, String(arg));
+  // M1：单次正则替换，避免多次 replaceAll 在占位符文本互相包含时污染（如 {1} 替换出 {0}）
+  str = str.replace(/\{(\d+)\}/g, (_, n) => {
+    const idx = Number(n);
+    return idx < args.length ? String(args[idx]) : `{${n}}`;
   });
   return str;
 }
@@ -226,29 +228,15 @@ export function getCurrentLang(): string {
  * 切换语言后调用即可让静态 HTML 文本同步更新。
  */
 export function applyI18n(): void {
-  // data-i18n → textContent
-  for (const el of $$<HTMLElement>("[data-i18n]")) {
-    const key = el.dataset.i18n;
-    if (key) el.textContent = t(key);
-  }
-  // data-i18n-placeholder → placeholder
-  // M19：在赋值前显式判断元素类型，避免对非输入元素强转后写入无效属性。
-  for (const el of $$<HTMLElement>("[data-i18n-placeholder]")) {
-    const key = el.dataset.i18nPlaceholder;
-    if (!key) continue;
-    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-      el.placeholder = t(key);
+  // M2：合并为一次查询，避免 4 次全文档遍历
+  // M19：placeholder 在赋值前显式判断元素类型，避免对非输入元素写入无效属性。
+  for (const el of $$<HTMLElement>("[data-i18n],[data-i18n-placeholder],[data-i18n-title],[data-i18n-aria-label]")) {
+    if (el.dataset.i18n) el.textContent = t(el.dataset.i18n);
+    if (el.dataset.i18nPlaceholder && (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
+      el.placeholder = t(el.dataset.i18nPlaceholder);
     }
-  }
-  // data-i18n-title → title
-  for (const el of $$<HTMLElement>("[data-i18n-title]")) {
-    const key = el.dataset.i18nTitle;
-    if (key) el.title = t(key);
-  }
-  // data-i18n-aria-label → aria-label
-  for (const el of $$<HTMLElement>("[data-i18n-aria-label]")) {
-    const key = el.dataset.i18nAriaLabel;
-    if (key) el.setAttribute("aria-label", t(key));
+    if (el.dataset.i18nTitle) el.title = t(el.dataset.i18nTitle);
+    if (el.dataset.i18nAriaLabel) el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
   }
   // 同步 <title>
   document.title = t("docTitle");
@@ -272,7 +260,8 @@ export function searchTypeLabel(key: string): string {
 export function setLang(lang: string): void {
   const next: Lang = lang in translations ? (lang as Lang) : "zh";
   currentLang = next;
-  store.set("lang", next);
+  // L13：检查 store.set 返回值，写入失败时提示用户
+  if (!store.set("lang", next)) toast(t("storeWriteFailed"), "warn");
   document.documentElement.lang = next === "zh" ? "zh-CN" : "en";
   applyI18n();
   // 通知动态生成内容的模块（如设置面板）按新语言重建

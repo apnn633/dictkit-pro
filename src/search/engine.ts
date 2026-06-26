@@ -38,7 +38,6 @@ export function searchDictionary(query: string, opts?: SearchOptions): SearchRes
 
   const results: SearchResult[] = [];
   const seen = new Set<string>();
-  const maxLimit = limit * 3;
   const files = state.files.filter(f => filter === "all" || f.key === filter);
 
   // 用 const 箭头（而非 function 声明）以保留上方 `if (!repo) return` 对 repo 的窄化
@@ -68,32 +67,25 @@ export function searchDictionary(query: string, opts?: SearchOptions): SearchRes
     const data = dict[file.key];
     if (!data || typeof data !== "object") continue;
 
-    // 拼音：先对归一化形式做精确/前缀匹配（特殊路径）
-    if (file.key === "pinyin" && pinyinQuery !== normalized) {
-      if (Object.prototype.hasOwnProperty.call(data, pinyinQuery)) {
-        for (const page of toArray(data[pinyinQuery])) {
-          push(pinyinQuery, page, file.type, file.key, file.weight, 0);
-        }
-      }
-    }
-
     for (const [term, value] of Object.entries(data)) {
       const termLower = term.toLowerCase();
       let matched = false;
       let baseScore = Number.MAX_SAFE_INTEGER;
 
       if (file.key === "pinyin") {
-        // 比较归一化后的拼音
+        // 比较归一化后的拼音，与非拼音分支保持 ===(0)/startsWith(1)/endsWith(2)/includes(3) 四档
         const termNorm = normalizePinyin(termLower);
         if (termNorm === pinyinQuery) { matched = true; baseScore = 0; }
         else if (termNorm.startsWith(pinyinQuery)) { matched = true; baseScore = 1; }
-        else if (termNorm.includes(pinyinQuery)) { matched = true; baseScore = 2; }
+        else if (termNorm.endsWith(pinyinQuery)) { matched = true; baseScore = 2; }
+        else if (termNorm.includes(pinyinQuery)) { matched = true; baseScore = 3; }
         else {
-          // ASCII 回退，兼容不带声调的输入
+          // ASCII 回退，兼容不带声调的输入（整体后移一档作为回退权重）
           const termAscii = pinyinToAscii(term);
           if (termAscii === asciiQuery) { matched = true; baseScore = 1; }
           else if (termAscii.startsWith(asciiQuery)) { matched = true; baseScore = 2; }
-          else if (termAscii.includes(asciiQuery)) { matched = true; baseScore = 3; }
+          else if (termAscii.endsWith(asciiQuery)) { matched = true; baseScore = 3; }
+          else if (termAscii.includes(asciiQuery)) { matched = true; baseScore = 4; }
         }
       } else {
         if (termLower === normalized) { matched = true; baseScore = 0; }
@@ -111,9 +103,7 @@ export function searchDictionary(query: string, opts?: SearchOptions): SearchRes
           push(term, page, file.type, file.key, file.weight, baseScore);
         }
       }
-      if (results.length >= maxLimit) break;
     }
-    if (results.length >= maxLimit) break;
   }
 
   return results
@@ -123,7 +113,7 @@ export function searchDictionary(query: string, opts?: SearchOptions): SearchRes
 
 /** 把单值或数组统一成数组，过滤掉 null/undefined 脏数据。 */
 function toArray(value: unknown): Array<string | number> {
-  if (Array.isArray(value)) return value.filter(v => v != null) as Array<string | number>;
+  if (Array.isArray(value)) return value.filter(v => typeof v === "string" || typeof v === "number") as Array<string | number>;
   if (value == null) return [];
   return [value as string | number];
 }

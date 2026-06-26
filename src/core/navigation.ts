@@ -19,6 +19,13 @@ export function isValidPageId(page: string, repo?: string | null): boolean {
   const headerCount = cfg.header.count;
   const footerCount = cfg.footer.count;
 
+  // M3：content.prefix 非空时，内容页按 "前缀+数字" 校验
+  if (cfg.content.prefix && id.startsWith(cfg.content.prefix)) {
+    const rest = id.slice(cfg.content.prefix.length);
+    if (!/^\d+$/.test(rest)) return false;
+    const n = parseInt(rest, 10);
+    return n > 0 && n <= contentCount;
+  }
   if (isNumeric(id)) {
     const n = parseInt(id, 10);
     return n > 0 && n <= contentCount;
@@ -54,7 +61,7 @@ export function normalizePageId(page: string, repo?: string | null): string | nu
 export function getFirstPageId(repo?: string | null): string {
   const cfg = pageConfig(repo);
   if (cfg.header.count > 0) return `${cfg.header.prefix}${padPage(1)}`;
-  if (cfg.content.count > 0) return padPage(1);
+  if (cfg.content.count > 0) return (cfg.content.prefix || "") + padPage(1);
   if (cfg.footer.count > 0) return `${cfg.footer.prefix}${padPage(1)}`;
   return "0001";
 }
@@ -63,7 +70,7 @@ export function getFirstPageId(repo?: string | null): string {
 export function getLastPageId(repo?: string | null): string {
   const cfg = pageConfig(repo);
   if (cfg.footer.count > 0) return `${cfg.footer.prefix}${padPage(cfg.footer.count)}`;
-  if (cfg.content.count > 0) return padPage(cfg.content.count);
+  if (cfg.content.count > 0) return (cfg.content.prefix || "") + padPage(cfg.content.count);
   if (cfg.header.count > 0) return `${cfg.header.prefix}${padPage(cfg.header.count)}`;
   return "0001";
 }
@@ -74,9 +81,15 @@ export function totalPages(repo?: string | null): number {
   return cfg.header.count + cfg.content.count + cfg.footer.count;
 }
 
-/** 是否为内容（纯数字）页。 */
+/** 是否为内容（纯数字 / content.prefix + 数字）页。 */
 export function isContentPage(page: string): boolean {
-  return /^\d+$/.test(String(page));
+  const cfg = pageConfig();
+  const p = String(page);
+  // M3：content.prefix 非空时，内容页形如 "前缀+数字"
+  if (cfg.content.prefix && p.startsWith(cfg.content.prefix)) {
+    return /^\d+$/.test(p.slice(cfg.content.prefix.length));
+  }
+  return /^\d+$/.test(p);
 }
 
 /** 按偏移量翻页，可跨越分组边界（header→content→footer）。 */

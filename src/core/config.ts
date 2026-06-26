@@ -48,7 +48,13 @@ async function fetchJSON(url: string): Promise<DictConfig> {
   try {
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return (await res.json()) as DictConfig;
+    // 轻量校验：响应必须为对象（避免命中 200+HTML 的伪成功响应）
+    const data = await res.json();
+    if (data === null || typeof data !== "object" || Array.isArray(data)) {
+      throw new Error("响应非对象");
+    }
+    // fetchJSON 已校验为对象，下方 as 断言安全
+    return data as DictConfig;
   } finally {
     clearTimeout(timer);
   }
@@ -113,6 +119,7 @@ function applyConfig(config: DictConfig, fromRemote = false): void {
   // 构建字典注册表 —— 附上 logo 路径与空的数据槽
   const dicts: Record<string, DictMeta> = {};
   for (const dict of config.dicts || []) {
+    if (dicts[dict.repo]) console.warn(`重复的词典 repo: ${dict.repo}，后者覆盖前者`);
     dicts[dict.repo] = {
       ...dict,
       logo: `assets/logos/${dict.repo}.png`,
@@ -123,6 +130,11 @@ function applyConfig(config: DictConfig, fromRemote = false): void {
     };
   }
   state.dicts = dicts;
+
+  // L7：currentDict 指向的 repo 已不在 dicts 中时，重置为首本
+  if (state.currentDict && !dicts[state.currentDict]) {
+    state.currentDict = Object.keys(dicts)[0] || null;
+  }
 
   // M20：为顶部 logo <img> 注册 onerror 回退，避免 404 时显示破图。
   // 配置加载完成后再绑定，确保 DOM 已就绪且只绑一次。

@@ -12,7 +12,14 @@ import { t, getCurrentLang } from "./i18n.ts";
 
 const KEY = "notes";
 
+// M9：笔记文本长度上限与条数上限，防止本地存储膨胀
+const MAX_NOTE_LENGTH = 5000;
+const MAX_NOTES = 500;
+
 let initialized = false;
+
+// L6：自定义弹层重入时旧 Promise 永不 resolve；记录挂起的 close 以便先触发它
+let activePromptClose: (() => void) | null = null;
 
 // 探测结果缓存：null=未探测, true=原生可用, false=需回退
 // 不在初始化做"空探测"（会向用户弹空框），而是在首次真实调用时 try/catch：
@@ -48,6 +55,8 @@ function promptNote(title: string, initial = ""): Promise<string | null> {
 /** 自定义弹层回退实现（window.prompt 不可用时使用）。 */
 function customPromptDialog(title: string, initial = ""): Promise<string | null> {
   return new Promise(resolve => {
+    // L6：防重入——若有挂起的旧弹层，先触发其 close 让旧 Promise resolve(null)，避免永不 resolve
+    activePromptClose?.();
     // 防重入：若已有弹层则先移除
     byId("notePrompt")?.remove();
     const overlay = h("div", { class: "popup-overlay", id: "notePrompt" }, [
@@ -70,10 +79,14 @@ function customPromptDialog(title: string, initial = ""): Promise<string | null>
     // M15：显式 null 检查替代非空断言；找不到时直接关闭弹层返回 null。
     const ta = overlay.querySelector<HTMLTextAreaElement>(".note-prompt-input");
     const close = (result: string | null) => {
+      // L6：关闭后清空挂起标记，避免后续新弹层误触发已 resolve 的旧 close
+      activePromptClose = null;
       overlay.classList.remove("active");
       setTimeout(() => overlay.remove(), 200);
       resolve(result);
     };
+    // L6：登记当前 close（包装为 0 参函数以匹配类型），供重入时先触发并 resolve(null)
+    activePromptClose = () => close(null);
     if (!ta) {
       close(null);
       return;
@@ -137,17 +150,24 @@ export async function addNote(text: string): Promise<void> {
   if (!dict) return;
   const page = state.currentPage;
   const now = Date.now();
+  // M9：截断超长文本，避免单条笔记撑爆本地存储
+  const trimmed = text.slice(0, MAX_NOTE_LENGTH);
   const note: Note = {
     id: genId(),
     dict,
     page,
-    text,
+    text: trimmed,
     ts: now,
     updatedAt: now,
   };
   const list = getNotes();
   list.unshift(note);
-  store.set(KEY, list);
+  // M9：条数上限，超出则丢弃最旧
+  if (list.length > MAX_NOTES) list.length = MAX_NOTES;
+  if (!store.set(KEY, list)) {
+    toast(t("storeWriteFailed"), "warn");
+    return;
+  }
   toast(t("noteAdded"), "success");
   renderNotes();
 }

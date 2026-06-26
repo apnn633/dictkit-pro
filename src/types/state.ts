@@ -65,7 +65,7 @@ export interface AppState {
   files: SearchFile[];
   fonts: FontOption[];
   dataSources: DataSource[];
-  defaults: Defaults;
+  defaults: Partial<Defaults>;
 
   // Runtime
   currentDict: string | null;

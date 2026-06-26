@@ -69,7 +69,7 @@ export function renderBookmarks(): void {
     const label = b.note || t("pageN", stripPage(b.page));
     const item = h("div", { class: "bookmark-item" }, [
       h("span", { class: "bookmark-term" }, [label]),
-      h("span", { class: "bookmark-meta" }, [`${dictName} · ${b.page}`]),
+      h("span", { class: "bookmark-meta" }, [`${dictName} · 第 ${stripPage(b.page)} 页`]),
       h("button", { class: "text-btn bookmark-delete", title: t("delete"), "aria-label": t("deleteBookmark") }, ["×"]),
     ]);
     // 点击条目 → 跳转
@@ -114,5 +114,9 @@ export function initBookmarks(): void {
   });
   byId("exportBookmarks")?.addEventListener("click", () => {
     downloadText("bookmarks.json", JSON.stringify(getBookmarks(), null, 2));
+  });
+  // M4：语言切换时若面板正打开，重渲染以同步空态/按钮文案
+  window.addEventListener("dictkit:langchange", () => {
+    if (byId("bookmarkPanel")?.classList.contains("active")) renderBookmarks();
   });
 }

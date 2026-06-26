@@ -49,7 +49,5 @@ export function initPinyinPopup(): void {
     // 点击遮罩（非内容区）关闭
     if (e.target === popup) popup.classList.remove("active");
   });
-  document.addEventListener("keydown", (e: KeyboardEvent) => {
-    if (e.key === "Escape") popup?.classList.remove("active");
-  });
+  // L3：ESC 关闭统一由 keyboard.ts 的 closeAllOverlays 负责，此处不再重复注册
 }

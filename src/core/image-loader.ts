@@ -77,12 +77,12 @@ function loadImageElement(url: string, signal: AbortSignal): Promise<string> {
     const img = new Image();
     img.decoding = "async";
     const timer = setTimeout(() => {
-      img.src = "";
+      img.removeAttribute("src");
       reject(new Error(`图片加载超时：${url}`));
     }, IMAGE_CACHE_CONFIG.loadTimeoutMs);
     const onAbort = (): void => {
       clearTimeout(timer);
-      img.src = "";
+      img.removeAttribute("src");
       reject(new DOMException("aborted", "AbortError"));
     };
     signal.addEventListener("abort", onAbort, { once: true });
@@ -137,8 +137,9 @@ export async function getImageUrl(repo: string, imagePath: string): Promise<stri
     setCached(repo, imagePath, url);
     return url;
   } finally {
-    state.loadingPromises.delete(key);
-    state.loadingControllers.delete(key);
+    // M1：按引用删除，避免并发请求间互相清理造成竞态
+    if (state.loadingPromises.get(key) === promise) state.loadingPromises.delete(key);
+    if (state.loadingControllers.get(key) === controller) state.loadingControllers.delete(key);
   }
 }
 
@@ -166,6 +167,8 @@ function preloadAdjacent(centerPage: string, limit: number, repo: string): void 
     const path = getImagePath(page, repo);
     const key = cacheKey(repo, path);
     if (isCached(repo, path) || state.preloadedImages.has(key)) continue;
+    // M5：preloadedImages 无界增长，超过阈值时清空避免内存膨胀
+    if (state.preloadedImages.size > 500) state.preloadedImages.clear();
     state.preloadedImages.add(key);
     getImageUrl(repo, path).catch(() => state.preloadedImages.delete(key));
   }

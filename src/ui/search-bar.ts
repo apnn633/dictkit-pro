@@ -132,7 +132,9 @@ function highlightSuggestion(delta: number): void {
   const items = getSuggestionItems();
   if (!items.length) return;
   const len = items.length;
-  const idx = (state.highlightedIndex + delta + len) % len;
+  // L3：初始态 highlightedIndex=-1 时，ArrowUp 应选中最后一项而非倒数第二项
+  const base = state.highlightedIndex < 0 ? (delta > 0 ? -1 : len) : state.highlightedIndex;
+  const idx = (base + delta + len) % len;
   state.highlightedIndex = idx;
   items.forEach((el, i) => el.classList.toggle("highlighted", i === idx));
   items[idx]?.scrollIntoView({ block: "nearest" });
@@ -153,6 +155,8 @@ export function initSearchBar(): void {
     input.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
+        // M2：回车立即搜索前取消挂起的防抖，避免下拉在搜索后被复活
+        schedule.cancel();
         if (state.highlightedIndex >= 0) {
           const items = getSuggestionItems();
           items[state.highlightedIndex]?.click();
@@ -186,9 +190,21 @@ export function initSearchBar(): void {
       if (!chip) return;
       const value = chip.dataset.filter as SearchFilter | undefined;
       if (!value) return;
+      // L4：白名单校验，防止未知 dataset.filter 值污染 searchFilter
+      if (!["all", "pinyin", "chars", "words"].includes(value as string)) return;
       filter.querySelectorAll<HTMLElement>(".filter-chip").forEach(c => c.classList.remove("active"));
       chip.classList.add("active");
       state.searchFilter = value;
     });
   }
+
+  // M3：点击建议下拉与输入框之外的区域时隐藏下拉
+  document.addEventListener("click", (e: MouseEvent) => {
+    const target = e.target as Node;
+    const box = byId("searchSuggestions");
+    const inputEl = byId("searchInput");
+    if (box && inputEl && !box.contains(target) && !inputEl.contains(target)) {
+      hideSuggestions();
+    }
+  });
 }

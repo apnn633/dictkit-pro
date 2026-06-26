@@ -17,6 +17,11 @@ export function toast(
   const container = byId("toastContainer");
   if (!container) return;
 
+  // M3：限制堆叠数量，超过 5 个移除最旧的提示
+  while (container.children.length >= 5) {
+    container.firstElementChild?.remove();
+  }
+
   const el = document.createElement("div");
   el.className = `toast toast-${type}`;
   el.textContent = message;

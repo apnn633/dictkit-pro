@@ -33,8 +33,13 @@ export function h(tag: string, attrs: Attrs = {}, children: Child[] = []): HTMLE
     if (value == null || value === false) continue;
     if (key === "class") el.className = String(value);
     else if (key === "dataset") Object.assign(el.dataset, value as Record<string, string>);
-    else if (key === "style" && typeof value === "object") Object.assign(el.style, value as Partial<CSSStyleDeclaration>);
-    else if (key.startsWith("on") && typeof value === "function") {
+    else if (key === "style" && typeof value === "object") {
+      // M10：用 setProperty 逐项设置，避免 Object.assign 跳过只读/弃用属性
+      for (const [prop, val] of Object.entries(value as Record<string, string>)) {
+        if (val != null) el.style.setProperty(prop, String(val));
+      }
+    } else if (/^on[A-Z]/.test(key) && typeof value === "function") {
+      // M9：on 后须跟大写字母（如 onClick→click），避免误判 oneshot 等自定义属性
       el.addEventListener(key.slice(2).toLowerCase(), value as EventListener);
     } else el.setAttribute(key, value === true ? "" : String(value));
   }

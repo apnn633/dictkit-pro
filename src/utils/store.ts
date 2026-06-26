@@ -12,7 +12,14 @@ export function get<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(PREFIX + key);
     if (raw == null) return fallback;
-    return JSON.parse(raw) as T;
+    const parsed = JSON.parse(raw);
+    // H2：过滤危险键，避免原型污染（__proto__/constructor/prototype）
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      for (const key of ["__proto__", "constructor", "prototype"]) {
+        if (key in parsed) delete parsed[key];
+      }
+    }
+    return parsed as T;
   } catch {
     return fallback;
   }
@@ -68,7 +75,10 @@ export function migrate<T>(oldKey: string, newKey: string): T | null {
     try {
       value = JSON.parse(legacy);
     } catch {
-      value = legacy;
+      // L13：legacy 非合法 JSON，直接移除旧键，不写入错误值；
+      // 调用方 get(newKey) 时会 fallback 到默认值
+      try { localStorage.removeItem("dictkit:v2:" + oldKey); } catch { /* ignore */ }
+      return null;
     }
     set(newKey, value);
     return value as T;

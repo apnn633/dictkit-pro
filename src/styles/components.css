@@ -99,7 +99,7 @@
     display: none;
     flex-direction: column;
     gap: 10px;
-    z-index: 60;
+    z-index: 110;
 }
 .settings-panel.active { display: flex; }
 
@@ -452,9 +452,6 @@
     color: var(--fg-muted);
     font-size: 13px;
 }
-
-/* ── Body lock when sidebar open ── */
-body:has(.sidebar.active) { overflow: hidden; }
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {

@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         for (const repo of repos.slice(1)) {
             pendingDictLoads[repo] = loadDictData(repo).catch(err => {
                 console.warn(`后台加载失败 ${repo}:`, err);
-            });
+            }).finally(() => { delete pendingDictLoads[repo]; });
         }
 
         // 从 URL 参数或保存的上次位置初始化
@@ -82,19 +82,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
         console.error("初始化失败:", err);
         const list = byId("bookmarksList");
-        if (list) list.textContent = `${t("initFailed")}：${(err as Error).message}`;
+        if (list) list.textContent = `${t("initFailed")}：${err instanceof Error ? err.message : String(err)}`;
         toast(t("initFailed"), "error");
     } finally {
         showLoading(false);
     }
 
-    initServiceWorker();
+    try {
+        initServiceWorker();
+    } catch (err) {
+        console.warn("SW init failed:", err);
+    }
 });
 
 function populateDictSelector(): void {
     const sel = byId<HTMLSelectElement>("dictSelector");
     if (!sel) return;
-    sel.innerHTML = "";
+    sel.replaceChildren();
     for (const dict of Object.values(state.dicts)) {
         sel.append(new Option(dict.name, dict.repo));
     }
@@ -147,7 +151,7 @@ export async function switchToDict(repo: string): Promise<void> {
     await switchDict(repo);
 }
 
-async function initFromURL(): Promise<void> {
+export async function initFromURL(): Promise<void> {
     const params = getURLParams();
     let dictParam: string | null = params.dict ?? null;
     const pageParam = params.page;
@@ -171,7 +175,7 @@ async function initFromURL(): Promise<void> {
 
     // URL page 参数覆盖词典的上次位置
     if (pageParam) {
-        const cleaned = String(pageParam).replace(/^0+/, "") || pageParam;
+        const cleaned = pageParam.replace(/^0+/, "") || pageParam;
         const page = normalizePageId(cleaned);
         // M17：显式校验 currentDict，避免对 null 取值
         const repo = state.currentDict;

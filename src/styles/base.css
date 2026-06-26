@@ -10,13 +10,6 @@
     font-style: normal;
     font-display: swap;
 }
-@font-face {
-    font-family: "KingHwaOldSong2";
-    src: url("/assets/fonts/kinghwaoldsong-v3b.woff2") format("woff2");
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
 
 :root {
     /* Accent (overridable via custom theme color) */
@@ -30,7 +23,7 @@
     --bg-soft: #f5f3ec;
     --fg: #1c1a17;
     --fg-soft: #5b574f;
-    --fg-muted: #9a938a;
+    --fg-muted: #7a746b;
     --border: #e3ded2;
     --border-strong: #c9c1b1;
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);

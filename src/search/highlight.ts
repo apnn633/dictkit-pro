@@ -24,7 +24,9 @@ function buildTags(tag: string, className: string | undefined): { open: string; 
  * 全部 HTML 均会转义；默认大小写不敏感；未命中时返回转义后的原词。
  */
 export function highlightTerm(term: string, query: string, opts?: HighlightOptions): string {
-  const { tag, className, caseInsensitive } = resolveOpts(opts);
+  let { tag, className, caseInsensitive } = resolveOpts(opts);
+  // 防御：tag 必须是合法的 HTML 标签名，否则回退到 mark
+  if (!/^[a-zA-Z][a-zA-Z0-9-]*$/.test(tag)) tag = "mark";
   const t = String(term);
   const q = String(query);
   if (!q) return escapeHtml(t);

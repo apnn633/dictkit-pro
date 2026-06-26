@@ -55,6 +55,8 @@ export function initDesktopZoom(): void {
  * `delta` 为缩放级别增量。
  */
 export function zoomTowardPoint(frame: HTMLElement, clientX: number, clientY: number, delta: number): void {
+    // 旋转 != 0 时锚点计算会漂移，退化为按中心缩放，不做锚点对齐
+    if (state.rotation !== 0) { setZoom(state.zoomLevel + delta); return; }
     // 收集当前所有可见图片
     const imgs = ["mainImage", "mainImage2", "compareImage"]
         .map(id => byId<HTMLImageElement>(id))

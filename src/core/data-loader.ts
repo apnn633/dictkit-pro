@@ -34,11 +34,12 @@ export function getCandidateUrls(repo: string, logicalPath: string): Candidate[]
   // M17：显式检查 config 是否就绪，避免对 null 解构导致运行时崩溃。
   // 当配置未加载完成（如远程配置仍在拉取中）时，回退到仅本地候选。
   const remote = state.config?.remote;
-  const localBase = `data/${repo}`;
 
   const out: Candidate[] = [];
   for (const source of state.dataSources) {
     if (source.type === "local") {
+      // M8：读取 source.base（缺省 "data"），支持自定义本地数据根目录
+      const localBase = `${source.base || "data"}/${repo}`;
       out.push({
         source,
         url: `${localBase}/${logicalPath}`,
@@ -88,7 +89,7 @@ function getBestProxy(candidates: Candidate[], kind: string): Candidate | null {
     const found = candidates.find(c => c.source.id === ps.lastSuccess);
     if (found) return found;
   }
-  if (now - ps.lastSuccessTime >= PROXY_CACHE_DURATION) ps.failed.clear();
+  if (ps.lastSuccess && now - ps.lastSuccessTime >= PROXY_CACHE_DURATION) ps.failed.clear();
   return candidates.find(c => !ps.failed.has(c.source.id)) || null;
 }
 
@@ -120,9 +121,13 @@ export async function loadJSON(repo: string, logicalPath: string, kind = "metada
     try {
       const res = await fetch(current.url, { signal: controller.signal });
       if (res.ok) {
-        const json = await res.json();
+        const data = await res.json();
+        // 轻量校验：res.ok 但内容非对象（如 HTML 404 页）视为失败
+        if (data === null || typeof data !== "object" || Array.isArray(data)) {
+          throw new Error("响应非对象");
+        }
         markSuccess(current, kind);
-        return json;
+        return data;
       }
     } catch (err) {
       console.warn(`loadJSON fail [${current.source.id}] ${logicalPath}`, err);

@@ -53,6 +53,6 @@ export function fuzzyScore(term: string, query: string): number {
     if (ti === -1) return Number.MAX_SAFE_INTEGER;
     ti++;
   }
-  // query 必须被完整消费才算匹配（防止 query 比 term 长时假阳性）
-  return qi === q.length ? 4 : Number.MAX_SAFE_INTEGER;
+  // 循环正常结束即表示 query 已被完整消费（循环内未命中会提前 return）
+  return 4;
 }

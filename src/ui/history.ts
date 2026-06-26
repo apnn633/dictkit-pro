@@ -12,6 +12,8 @@ import { t, getCurrentLang } from "./i18n.ts";
 const KEY = "history";
 
 let initialized = false;
+// M7：跨词典跳转竞态锁，避免并发 openHistory 重复切换词典
+let navigating = false;
 
 /** 格式化时间戳为简短字符串（M11：locale 跟随当前语言）。 */
 function formatTime(ts: number): string {
@@ -82,6 +84,8 @@ export function trimHistoryToLimit(): number {
 
 /** 清空阅读历史。 */
 export function clearHistory(): void {
+  // M6：清空前二次确认，避免误触
+  if (!confirm(t("confirm") + " " + t("history"))) return;
   store.set(KEY, []);
   renderHistory();
   toast(t("historyCleared"), "success");
@@ -114,14 +118,21 @@ export function renderHistory(): void {
 
 /** 打开历史条目：跨词典时走完整切换流程，再加载图片。 */
 async function openHistory(it: HistoryEntry): Promise<void> {
-  if (it.dict && it.dict !== state.currentDict) {
-    const { switchToDict } = await import("../main.ts");
-    await switchToDict(it.dict);
+  // M7：跨词典跳转加锁，避免并发调用重复触发 switchToDict 造成竞态
+  if (navigating) return;
+  navigating = true;
+  try {
+    if (it.dict && it.dict !== state.currentDict) {
+      const { switchToDict } = await import("../main.ts");
+      await switchToDict(it.dict);
+    }
+    setCurrentPage(it.page);
+    closeAllRightSidebars();
+    const mod = await import("../viewer/viewer.ts");
+    await mod.showImage();
+  } finally {
+    navigating = false;
   }
-  setCurrentPage(it.page);
-  closeAllRightSidebars();
-  const mod = await import("../viewer/viewer.ts");
-  await mod.showImage();
 }
 
 /** 关闭所有右侧侧栏。 */

@@ -17,7 +17,6 @@ const OFFSCREEN_BATCH_BUFFER = 3;
 const THUMB_STEP = THUMB_WIDTH + 8;
 
 let initialized = false;
-let currentRange: { start: number; end: number } = { start: 0, end: 0 };
 let scrollRaf = 0;
 /** M18：已渲染索引集合，让"是否已渲染"判断从 O(n) 降到 O(1)。 */
 const renderedIndices = new Set<number>();
@@ -80,7 +79,7 @@ function buildThumb(index: number): HTMLElement {
     dataset: { index: String(index), page },
     style: { left: `${left}px` },
   }, [
-    h("img", { alt: t("pageN", stripPage(page)), loading: "lazy" }),
+    h("img", { alt: t("pageN", stripPage(page)) }),
     h("div", { class: "thumb-page" }, [stripPage(page)]),
   ]);
   void loadThumbImage(item, page);
@@ -99,10 +98,6 @@ function renderRange(start: number, end: number): void {
     spacer.appendChild(buildThumb(i));
     renderedIndices.add(i);
   }
-  currentRange = {
-    start: currentRange.start < 0 ? start : Math.min(currentRange.start, start),
-    end: Math.max(currentRange.end, end),
-  };
 }
 
 /**
@@ -138,7 +133,6 @@ function renderInitialThumbs(): void {
   spacer.style.width = `${total * THUMB_STEP + 8}px`;
   track.appendChild(spacer);
 
-  currentRange = { start: 0, end: 0 };
   const center = pageToIndex(state.currentPage);
   const start = Math.max(0, center - Math.floor(RENDER_BATCH / 2));
   const end = Math.min(total, start + RENDER_BATCH);

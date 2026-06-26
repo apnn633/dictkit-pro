@@ -18,32 +18,38 @@ interface TouchState {
     sScrollY: number;
     sDist: number;
     sZoom: number;
-    moved: boolean;
 }
+
+let initialized = false;
 
 /** 初始化手机端触摸交互。 */
 export function initTouchInteraction(): void {
+    if (initialized) return;
+    initialized = true;
     const container = byId("resultContainer");
     const frame = document.querySelector<HTMLElement>(".viewer-frame");
     if (!container || !frame) return;
 
     const ts: TouchState = {
         mode: null, sx: 0, sy: 0, sScrollX: 0, sScrollY: 0,
-        sDist: 0, sZoom: 0, moved: false,
+        sDist: 0, sZoom: 0,
     };
 
     frame.addEventListener("touchstart", e => {
         if (e.touches.length === 1) {
             const t = e.touches[0];
+            if (!t) return;
             // 已放大 → 拖拽平移；fit (100%) → 候选滑动翻页
             ts.mode = state.zoomLevel > 100 ? "pan" : "swipe";
             ts.sx = t.clientX; ts.sy = t.clientY;
             ts.sScrollX = frame.scrollLeft; ts.sScrollY = frame.scrollTop;
-            ts.moved = false;
         } else if (e.touches.length === 2) {
+            const t0 = e.touches[0];
+            const t1 = e.touches[1];
+            if (!t0 || !t1) return;
             ts.mode = "pinch";
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dx = t0.clientX - t1.clientX;
+            const dy = t0.clientY - t1.clientY;
             ts.sDist = Math.hypot(dx, dy);
             ts.sZoom = state.zoomLevel;
         }
@@ -56,11 +62,9 @@ export function initTouchInteraction(): void {
             e.preventDefault();
             frame.scrollLeft = ts.sScrollX - (t.clientX - ts.sx);
             frame.scrollTop = ts.sScrollY - (t.clientY - ts.sy);
-            ts.moved = true;
         } else if (ts.mode === "swipe") {
             const t = e.touches[0];
             if (!t) return;
-            ts.moved = true;
             // 明显水平方向时阻止页面纵向滚动
             if (Math.abs(t.clientX - ts.sx) > Math.abs(t.clientY - ts.sy)) {
                 e.preventDefault();
@@ -94,5 +98,14 @@ export function initTouchInteraction(): void {
             }
         }
         if (e.touches.length === 0) ts.mode = null;
+        // 双指 pinch 后抬一根手指：切回单指 pan/swipe，避免无法继续操作
+        else if (ts.mode === "pinch" && e.touches.length === 1) {
+            const t = e.touches[0];
+            if (t) {
+                ts.mode = state.zoomLevel > 100 ? "pan" : "swipe";
+                ts.sx = t.clientX; ts.sy = t.clientY;
+                ts.sScrollX = frame.scrollLeft; ts.sScrollY = frame.scrollTop;
+            }
+        }
     }, { passive: true });
 }
