@@ -47,10 +47,12 @@ export function fuzzyScore(term: string, query: string): number {
 
   // 子序列匹配，用于模糊输入
   let ti = 0;
-  for (let qi = 0; qi < q.length && ti < t.length; qi++) {
+  let qi = 0;
+  for (; qi < q.length; qi++) {
     ti = t.indexOf(q[qi], ti);
     if (ti === -1) return Number.MAX_SAFE_INTEGER;
     ti++;
   }
-  return 4;
+  // query 必须被完整消费才算匹配（防止 query 比 term 长时假阳性）
+  return qi === q.length ? 4 : Number.MAX_SAFE_INTEGER;
 }

@@ -82,7 +82,9 @@
 .close-popup:hover { background: var(--bg-soft); color: var(--fg); }
 
 /* ── Settings panel ── */
-.settings-wrapper { position: static; }
+/* relative 定位让 .settings-panel 的 absolute right:0 相对 wrapper 右边，
+   避免按钮组换行后 panel 错位到 viewport 边缘 */
+.settings-wrapper { position: relative; }
 .settings-panel {
     position: absolute;
     top: calc(100% + 6px);
@@ -140,6 +142,33 @@
     min-width: 42px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+}
+/* 堆叠式设置行：标签在上、控件与提示在下（用于历史上限等带说明的项） */
+.settings-row-stack {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+}
+.settings-row-stack .settings-label {
+    font-size: 12px;
+    color: var(--fg);
+    font-weight: 500;
+}
+.settings-number-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    font-size: 13px;
+    color: var(--fg);
+    box-sizing: border-box;
+}
+.settings-number-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.settings-hint {
+    font-size: 11px;
+    color: var(--fg-muted);
+    line-height: 1.4;
 }
 
 /* ── Toggle switch (settings) ── */

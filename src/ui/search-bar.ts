@@ -14,6 +14,8 @@ import { t, searchTypeLabel } from "./i18n.ts";
 const SUGGESTION_LIMIT = 12;
 const SUGGESTION_DEBOUNCE = 100;
 
+let initialized = false;
+
 /** 外部注册的搜索回调（每次有效搜索时触发）。 */
 let searchCallback: ((query: string) => void) | null = null;
 
@@ -138,6 +140,8 @@ function highlightSuggestion(delta: number): void {
 
 /** 初始化搜索栏：按钮、键盘、输入防抖、过滤筹码。 */
 export function initSearchBar(): void {
+  if (initialized) return;
+  initialized = true;
   const input = byId<HTMLInputElement>("searchInput");
   const btn = byId("searchBtn");
   const filter = byId("searchFilter");
@@ -168,7 +172,11 @@ export function initSearchBar(): void {
     });
 
     const schedule = debounce(() => showSuggestions(input.value), SUGGESTION_DEBOUNCE);
-    input.addEventListener("input", schedule);
+    input.addEventListener("input", () => {
+      // 输入变化时立即重置高亮索引，避免防抖触发前用过期索引点击旧建议项
+      state.highlightedIndex = -1;
+      schedule();
+    });
   }
 
   // 过滤筹码：切换 active 并写入全局 searchFilter

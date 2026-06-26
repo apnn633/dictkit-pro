@@ -121,9 +121,11 @@ export function searchDictionary(query: string, opts?: SearchOptions): SearchRes
     .slice(0, limit);
 }
 
-/** 把单值或数组统一成数组。 */
+/** 把单值或数组统一成数组，过滤掉 null/undefined 脏数据。 */
 function toArray(value: unknown): Array<string | number> {
-  return Array.isArray(value) ? (value as Array<string | number>) : [value as string | number];
+  if (Array.isArray(value)) return value.filter(v => v != null) as Array<string | number>;
+  if (value == null) return [];
+  return [value as string | number];
 }
 
 /** 将纯数字查询解析为合法页码（超出范围返回 null）。 */

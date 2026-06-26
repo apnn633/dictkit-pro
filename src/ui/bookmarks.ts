@@ -15,6 +15,8 @@ import { t } from "./i18n.ts";
 
 const KEY = "bookmarks";
 
+let initialized = false;
+
 /** 读取全部书签。 */
 export function getBookmarks(): Bookmark[] {
   return store.get<Bookmark[]>(KEY, []);
@@ -99,6 +101,8 @@ async function openBookmark(b: Bookmark): Promise<void> {
 
 /** 初始化书签侧栏按钮。 */
 export function initBookmarks(): void {
+  if (initialized) return;
+  initialized = true;
   byId("bookmarkToggle")?.addEventListener("click", () => {
     closeAllRightSidebars();
     byId("bookmarkPanel")?.classList.add("active");

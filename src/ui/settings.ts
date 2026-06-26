@@ -7,6 +7,7 @@ import * as store from "../utils/store.ts";
 import { clearProxyCache } from "../core/data-loader.ts";
 import { toast } from "./toast.ts";
 import { t } from "./i18n.ts";
+import { trimHistoryToLimit, renderHistory } from "./history.ts";
 
 // viewer 通过动态 import 加载以打破循环依赖（字面量路径，Vite 可静态分析）
 
@@ -21,6 +22,7 @@ const KEYS = {
   fontSize: "fontSize",
   zoom: "zoomLevel",
   fitWidth: "fitWidth",
+  historyLimit: "historyLimit",
 } as const;
 
 /** 应用字体：叠加自定义字体到字体栈前部。 */
@@ -227,6 +229,32 @@ function buildPanel(): void {
     fitLabel,
   ]);
 
+  // 历史记录上限（超过此条数自动删除最旧记录；0 表示用默认值）
+  const historyLimitInput = h("input", {
+    type: "number",
+    min: "0",
+    max: "10000",
+    step: "1",
+    id: "historyLimitInput",
+    class: "settings-number-input",
+  });
+  historyLimitInput.value = String(store.get<number>(KEYS.historyLimit, 0));
+  historyLimitInput.addEventListener("change", () => {
+    const raw = Number(historyLimitInput.value);
+    const val = Number.isFinite(raw) && raw >= 0 ? Math.floor(raw) : 0;
+    historyLimitInput.value = String(val);
+    store.set(KEYS.historyLimit, val);
+    // 立即按新上限裁剪已存在的阅读历史，并刷新历史侧栏（若正打开）
+    const removed = trimHistoryToLimit();
+    if (removed > 0) renderHistory();
+    toast(t("historyLimitHint"), "info");
+  });
+  const historyLimitRow = h("div", { class: "settings-row settings-row-stack" }, [
+    h("label", { class: "settings-label", for: "historyLimitInput" }, [t("setHistoryLimit")]),
+    historyLimitInput,
+    h("span", { class: "settings-hint" }, [t("historyLimitHint")]),
+  ]);
+
   panel.append(
     row(t("setFont"), fontSelect),
     row(t("setCustomFont"), fontInput),
@@ -236,6 +264,7 @@ function buildPanel(): void {
     row(t("setDataSource"), dsSelect),
     row(t("setLayout"), spreadSelect),
     fitRow,
+    historyLimitRow,
   );
 }
 

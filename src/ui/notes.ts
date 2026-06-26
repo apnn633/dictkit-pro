@@ -12,6 +12,8 @@ import { t, getCurrentLang } from "./i18n.ts";
 
 const KEY = "notes";
 
+let initialized = false;
+
 // 探测结果缓存：null=未探测, true=原生可用, false=需回退
 // 不在初始化做"空探测"（会向用户弹空框），而是在首次真实调用时 try/catch：
 // 常规环境首次即真实调用，成功后缓存 true；沙箱环境首次抛错，缓存 false 后续直接回退。
@@ -183,7 +185,7 @@ export function renderNotes(): void {
     const dictName = state.dicts[n.dict]?.name || n.dict;
     const item = h("div", { class: "note-item", dataset: { id: n.id } }, [
       h("div", { class: "note-text" }, [n.text]),
-      h("div", { class: "note-meta" }, [`${dictName} · 第 ${stripPage(n.page)} 页 · ${formatTime(n.updatedAt)}`]),
+      h("div", { class: "note-meta" }, [`${dictName} · ${t("pageN", stripPage(n.page))} · ${formatTime(n.updatedAt)}`]),
       h("div", { class: "note-actions" }, [
         h("button", { class: "text-btn note-edit" }, [t("noteEdit")]),
         h("button", { class: "text-btn note-delete" }, [t("noteDelete")]),
@@ -221,6 +223,8 @@ async function openNote(n: Note): Promise<void> {
 
 /** 初始化笔记侧栏按钮。 */
 export function initNotes(): void {
+  if (initialized) return;
+  initialized = true;
   byId("notesToggle")?.addEventListener("click", () => {
     closeAllRightSidebars();
     byId("notesPanel")?.classList.add("active");

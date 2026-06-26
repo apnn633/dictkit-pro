@@ -6,6 +6,7 @@ import { state, setCurrentPage } from "../core/state.ts";
 import { pageConfig } from "../core/config.ts";
 import { totalPages } from "../core/navigation.ts";
 import { getImagePath, getImageUrl } from "../core/image-loader.ts";
+import { t } from "./i18n.ts";
 
 // viewer 通过动态 import 加载以打破循环依赖（字面量路径，Vite 可静态分析）
 const THUMB_WIDTH = 60;
@@ -59,6 +60,9 @@ async function loadThumbImage(item: HTMLElement, page: string): Promise<void> {
   const path = getImagePath(page, repo);
   try {
     const url = await getImageUrl(repo, path);
+    // 节点可能在 await 期间被 recycleOffscreen/renderInitialThumbs 移除，
+    // 此时不再设 src，避免对已脱离 DOM 的 img 发起幽灵网络请求。
+    if (!item.isConnected) return;
     img.src = url;
   } catch (err) {
     // getImageUrl 在字典切换被 abort 时会抛 AbortError，此处静默处理
@@ -76,7 +80,7 @@ function buildThumb(index: number): HTMLElement {
     dataset: { index: String(index), page },
     style: { left: `${left}px` },
   }, [
-    h("img", { alt: `第 ${stripPage(page)} 页`, loading: "lazy" }),
+    h("img", { alt: t("pageN", stripPage(page)), loading: "lazy" }),
     h("div", { class: "thumb-page" }, [stripPage(page)]),
   ]);
   void loadThumbImage(item, page);

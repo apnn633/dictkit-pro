@@ -156,6 +156,9 @@ export async function preloadPage(page: string, limit = IMAGE_CACHE_CONFIG.prelo
 
 /** 预加载中心页前后的相邻页。 */
 function preloadAdjacent(centerPage: string, limit: number, repo: string): void {
+  // 切词典后旧 idle 回调可能仍触发：若词典已变更，放弃旧预加载，
+  // 避免对旧词典发起无效请求并回写已清空的缓存。
+  if (state.currentDict !== repo) return;
   for (let offset = -limit; offset <= limit; offset++) {
     if (offset === 0) continue;
     const page = shiftPage(centerPage, offset, repo);

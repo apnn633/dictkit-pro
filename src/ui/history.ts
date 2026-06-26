@@ -11,6 +11,8 @@ import { t, getCurrentLang } from "./i18n.ts";
 
 const KEY = "history";
 
+let initialized = false;
+
 /** 格式化时间戳为简短字符串（M11：locale 跟随当前语言）。 */
 function formatTime(ts: number): string {
   try {
@@ -51,14 +53,31 @@ export function recordHistory(entry: {
     };
     list.unshift(item);
   }
-  const limit = state.defaults.historyLimit || 100;
-  if (list.length > limit) list.length = limit;
+  // 用户设置的历史上限优先；为 0 时回退到配置默认值，再兜底 100
+  const userLimit = store.get<number>("historyLimit", 0);
+  const limit = userLimit > 0 ? userLimit : (state.defaults.historyLimit || 100);
+  if (limit > 0 && list.length > limit) list.length = limit;
   store.set(KEY, list);
 }
 
 /** 读取全部阅读历史。 */
 export function getHistory(): HistoryEntry[] {
   return store.get<HistoryEntry[]>(KEY, []);
+}
+
+/**
+ * 按当前生效的上限裁剪已存在的阅读历史（用户在设置中下调上限时调用）。
+ * 返回被裁剪掉的条数。
+ */
+export function trimHistoryToLimit(): number {
+  const list = getHistory();
+  const userLimit = store.get<number>("historyLimit", 0);
+  const limit = userLimit > 0 ? userLimit : (state.defaults.historyLimit || 100);
+  if (limit <= 0 || list.length <= limit) return 0;
+  const removed = list.length - limit;
+  list.length = limit;
+  store.set(KEY, list);
+  return removed;
 }
 
 /** 清空阅读历史。 */
@@ -114,6 +133,8 @@ export function closeAllRightSidebars(): void {
 
 /** 初始化历史侧栏按钮。 */
 export function initHistory(): void {
+  if (initialized) return;
+  initialized = true;
   byId("historyToggle")?.addEventListener("click", () => {
     closeAllRightSidebars();
     byId("historyPanel")?.classList.add("active");

@@ -8,8 +8,12 @@ import {
 import { toggleFitWidth } from "../ui/settings.ts";
 import { byId } from "../utils/dom.ts";
 
+let initialized = false;
+
 /** 初始化查看器工具栏按钮与翻页箭头。 */
 export function initViewerButtons(): void {
+    if (initialized) return;
+    initialized = true;
     const prevBtn = byId("prevBtn");
     const nextBtn = byId("nextBtn");
     // M16：所有异步分支统一 .catch
@@ -41,7 +45,9 @@ export function initViewerButtons(): void {
 
     document.addEventListener("fullscreenchange", () => {
         const c = byId("resultContainer");
-        if (!document.fullscreenElement && c) c.classList.remove("fullscreen");
-        else if (c) c.classList.add("fullscreen");
+        if (!c) return;
+        // 仅当全屏的是本查看器容器时才加 fullscreen 类，
+        // 避免页面其他元素（如视频）进入全屏时误加。
+        c.classList.toggle("fullscreen", document.fullscreenElement === c);
     });
 }

@@ -101,6 +101,8 @@ const translations: Record<Lang, Record<string, string>> = {
     noDictConfig: "未找到词典配置",
     initFailed: "初始化失败，请检查数据来源",
     pageParamInvalid: "页码参数格式异常或超出范围",
+    setHistoryLimit: "历史上限",
+    historyLimitHint: "超过此条数自动删除最旧记录（0=用默认值）",
   },
   en: {
     appTitle: "Chinese Dictionary Online",
@@ -193,10 +195,13 @@ const translations: Record<Lang, Record<string, string>> = {
     noDictConfig: "No dictionary configuration found",
     initFailed: "Initialization failed. Please check data sources.",
     pageParamInvalid: "Page parameter is malformed or out of range",
+    setHistoryLimit: "History Limit",
+    historyLimitHint: "Auto-deletes oldest entries beyond this count (0=use default)",
   },
 };
 
 let currentLang: Lang = "zh";
+let initialized = false;
 
 /**
  * 翻译查找，支持 {0} {1} 形式的占位符。
@@ -276,6 +281,8 @@ export function setLang(lang: string): void {
 
 /** 初始化 i18n：读取存储的语言、刷新 DOM、绑定切换按钮。 */
 export function initI18n(): void {
+  if (initialized) return;
+  initialized = true;
   const stored = store.get<string>("lang", "zh");
   setLang(stored);
   byId("langToggle")?.addEventListener("click", () => {

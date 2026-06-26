@@ -7,8 +7,12 @@ import { state } from "../core/state.ts";
 import { setZoom } from "./viewer.ts";
 import { byId } from "../utils/dom.ts";
 
+let initialized = false;
+
 /** 初始化桌面端缩放交互（滚轮 + 鼠标拖拽）。 */
 export function initDesktopZoom(): void {
+    if (initialized) return;
+    initialized = true;
     const container = byId("resultContainer");
     const frame = document.querySelector<HTMLElement>(".viewer-frame");
     if (!container || !frame) return;

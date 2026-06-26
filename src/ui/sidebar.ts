@@ -8,6 +8,8 @@ import { t } from "./i18n.ts";
 
 const KEY = "lastPage";
 
+let initialized = false;
+
 /** 目录叶子节点。 */
 type TocLeaf = { title: string; page: string };
 /** 目录节点（带 more 时为可折叠分组）。 */
@@ -86,6 +88,8 @@ export function closeSidebar(): void {
 
 /** 初始化目录侧栏开关。 */
 export function initSidebarToggle(): void {
+  if (initialized) return;
+  initialized = true;
   byId("sidebarToggle")?.addEventListener("click", () => {
     const popup = byId("sidebarPopup");
     if (!popup) return;

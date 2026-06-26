@@ -88,10 +88,10 @@ export function shiftPage(current: string, offset = 1, repo?: string | null): st
   const mainCount = headerCount + contentCount;
   const totalCount = mainCount + footerCount;
 
-  // 解析当前页所属分组前缀
+  // 解析当前页所属分组前缀（同时校验前缀非空，避免空字符串匹配所有页）
   let group: string;
-  if (cfg.header.count && current.startsWith(cfg.header.prefix)) group = cfg.header.prefix;
-  else if (cfg.footer.count && current.startsWith(cfg.footer.prefix)) group = cfg.footer.prefix;
+  if (cfg.header.count && cfg.header.prefix && current.startsWith(cfg.header.prefix)) group = cfg.header.prefix;
+  else if (cfg.footer.count && cfg.footer.prefix && current.startsWith(cfg.footer.prefix)) group = cfg.footer.prefix;
   else group = cfg.content.prefix;
 
   const num = parseInt(current.slice(group.length), 10);

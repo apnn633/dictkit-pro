@@ -6,6 +6,8 @@ import { state } from "../core/state.ts";
 import { toast } from "./toast.ts";
 import { t } from "./i18n.ts";
 
+let initialized = false;
+
 /** 退出对照模式。 */
 async function exitCompare(): Promise<void> {
   state.compareMode = false;
@@ -89,6 +91,8 @@ function openComparePicker(): void {
 
 /** 初始化对照模式开关。 */
 export function initCompare(): void {
+  if (initialized) return;
+  initialized = true;
   byId("compareToggle")?.addEventListener("click", () => {
     if (state.compareMode) {
       void exitCompare().catch(err => console.warn("exitCompare failed:", err));
