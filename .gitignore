@@ -1,0 +1,17 @@
+# Build output
+dist/
+# Dependencies
+node_modules/
+# Vite cache
+.vite/
+# Data is symlinked from ../dictkit-unified/data — never commit (1.9GB, hosted remotely)
+# 用 `data` 而非 `data/`：同时忽略符号链接本身与目录
+data
+# Local env (may contain remote data repo credentials / paths)
+.env
+.env.local
+# Editor
+.vscode/
+.idea/
+*.log
+.DS_Store

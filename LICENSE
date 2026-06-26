@@ -1,0 +1,50 @@
+MIT License
+
+Copyright (c) 2026 dictkit-pro
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+
+DATA ASSETS EXCLUSION / 数据资产例外声明
+
+The MIT license above applies ONLY to the source code of this project
+(files under src/, tests/, and build configuration).
+
+It does NOT cover the following data assets, which are NOT distributed with
+this repository and whose copyrights belong to their respective owners:
+
+  - Dictionary scanned page images (dictionary scans)
+  - Dictionary search index data (pinyin / chars / words / toc JSON)
+  - Dictionary logos and publisher trademarks
+  - Third-party fonts (e.g. KingHwaOldSong / 京華老宋体)
+
+本 MIT 许可证仅覆盖本项目源代码（src/、tests/ 及构建配置文件），
+不覆盖以下数据资产，这些资产不在本仓库内分发，其版权归相应权利人所有：
+
+  - 词典扫描页图片
+  - 词典检索索引数据（拼音 / 单字 / 词语 / 目录 JSON）
+  - 词典 Logo 与出版社商标
+  - 第三方字体（如京華老宋体）
+
+本项目仅作为本地阅读外壳，不存储、不分发任何词典内容。
+使用者须自行拥有正版词典数据，并遵守当地著作权法。
+
+See README.md for full disclaimer. / 完整免责声明见 README.md。
+

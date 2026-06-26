@@ -1,0 +1,91 @@
+/* ============================================================
+   theme.css — Theme variants (dark / sepia / contrast + system)
+   ============================================================ */
+
+/* Auto: follow system preference */
+:root[data-theme="auto"] {
+    --bg: #fdfcf8;
+    --bg-elev: #ffffff;
+    --bg-soft: #f5f3ec;
+    --fg: #1c1a17;
+    --fg-soft: #5b574f;
+    --fg-muted: #9a938a;
+    --border: #e3ded2;
+    --border-strong: #c9c1b1;
+    --viewer-bg: #efeae0;
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] {
+        --bg: #15171b;
+        --bg-elev: #1d2026;
+        --bg-soft: #232730;
+        --fg: #e8e6e2;
+        --fg-soft: #aaa6a0;
+        --fg-muted: #6f6c66;
+        --border: #2d323b;
+        --border-strong: #3d4350;
+        --viewer-bg: #0d0f12;
+    }
+}
+
+/* Light */
+:root[data-theme="light"] {
+    --bg: #fdfcf8;
+    --bg-elev: #ffffff;
+    --bg-soft: #f5f3ec;
+    --fg: #1c1a17;
+    --fg-soft: #5b574f;
+    --fg-muted: #9a938a;
+    --border: #e3ded2;
+    --border-strong: #c9c1b1;
+    --viewer-bg: #efeae0;
+}
+
+/* Dark */
+:root[data-theme="dark"] {
+    --bg: #15171b;
+    --bg-elev: #1d2026;
+    --bg-soft: #232730;
+    --fg: #e8e6e2;
+    --fg-soft: #aaa6a0;
+    --fg-muted: #6f6c66;
+    --border: #2d323b;
+    --border-strong: #3d4350;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-strong: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --viewer-bg: #0d0f12;
+}
+
+/* Sepia — eye-friendly warm paper */
+:root[data-theme="sepia"] {
+    --bg: #f4ecd8;
+    --bg-elev: #faf3e0;
+    --bg-soft: #ebe0c4;
+    --fg: #3d2f1d;
+    --fg-soft: #6b5638;
+    --fg-muted: #9a8763;
+    --border: #d9c9a3;
+    --border-strong: #b89e6c;
+    --viewer-bg: #e8dab8;
+}
+
+/* High contrast */
+:root[data-theme="contrast"] {
+    --bg: #ffffff;
+    --bg-elev: #ffffff;
+    --bg-soft: #f0f0f0;
+    --fg: #000000;
+    --fg-soft: #1a1a1a;
+    --fg-muted: #4a4a4a;
+    --border: #000000;
+    --border-strong: #000000;
+    --shadow: 0 0 0 1px #000;
+    --shadow-strong: 0 0 0 2px #000;
+    --viewer-bg: #ffffff;
+}
+:root[data-theme="contrast"] .action-btn,
+:root[data-theme="contrast"] .search-input,
+:root[data-theme="contrast"] .dict-selector,
+:root[data-theme="contrast"] .settings-select {
+    border: 1px solid #000;
+}

@@ -1,0 +1,506 @@
+/* ============================================================
+   layout.css — Top-level layout (header / viewer / sidebars)
+   ============================================================ */
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Header ── */
+.app-header {
+    flex: 0 0 auto;
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    z-index: 50;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    min-height: var(--header-h);
+    flex-wrap: wrap;
+}
+
+.dictionary-selector { flex: 0 0 auto; }
+.dict-selector-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px 8px 4px 6px;
+}
+.dict-logo {
+    width: 28px; height: 28px;
+    border-radius: 4px;
+    object-fit: contain;
+}
+.dict-selector {
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 4px 4px 0;
+    cursor: pointer;
+    max-width: 160px;
+}
+.dict-selector:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.search-input-container {
+    flex: 1 1 280px;
+    min-width: 200px;
+    position: relative;
+}
+.search-input {
+    width: 100%;
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    font-size: 15px;
+    transition: border-color var(--transition);
+}
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ── Search filter chips ── */
+.search-filter {
+    display: flex;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+.filter-chip {
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg-elev);
+    color: var(--fg-soft);
+    font-size: 12px;
+    transition: all var(--transition);
+}
+.filter-chip:hover { border-color: var(--border-strong); color: var(--fg); }
+.filter-chip.active {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+}
+
+.search-buttons {
+    display: flex;
+    gap: 4px;
+    flex: 0 0 auto;
+    position: relative;
+}
+
+.search-result {
+    padding: 0 16px 8px;
+    font-size: 13px;
+    color: var(--fg-soft);
+    min-height: 1.5em;
+}
+
+/* ── Result container (viewer) ── */
+.result-container {
+    flex: 1 1 auto;
+    position: relative;
+    background: var(--viewer-bg);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition);
+}
+.result-container.is-loading::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: loading-bar 1.2s ease-in-out infinite;
+    z-index: 10;
+}
+@keyframes loading-bar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.viewer-frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    /* flex-start + margin:auto on the image: when the image fits it is
+       centered (margin absorbs free space); when it overflows margin
+       collapses to 0 and the image sits at the start, fully scrollable. */
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 24px 64px;
+    overflow: auto;
+    scrollbar-width: thin;
+    /* Disable browser-native touch gestures so JS owns pinch-zoom / pan / swipe. */
+    touch-action: none;
+    cursor: default;
+}
+.result-container.is-zoomed .viewer-frame { cursor: grab; }
+.result-container.is-zoomed .viewer-frame.dragging { cursor: grabbing; }
+.viewer-frame img {
+    /* Scale via HEIGHT (layout size), not transform:scale. transform reserved
+       for rotation. No transition: getBoundingClientRect must be synchronous. */
+    height: calc(100% * var(--zoom) / 100);
+    width: auto;
+    max-width: none;
+    max-height: none;
+    flex: 0 0 auto;
+    margin: auto;
+    transform: rotate(var(--rotation));
+    transform-origin: center center;
+    box-shadow: var(--shadow-strong);
+    background: var(--bg-elev);
+    /* 词典扫描页为 1-bit 黑白高分辨率图（最高 6471×9542）。缩小显示时
+       默认双线性插值会让文字笔画发灰断裂。-webkit-optimize-contrast 让
+       WebKit/Blink 用高质量重采样，显著改善 1-bit 文字清晰度；
+       不识别该值的浏览器回退到前面的 auto。 */
+    image-rendering: auto;
+    image-rendering: -webkit-optimize-contrast;
+}
+.spread-image, .compare-image { display: none; }
+
+.result-container.spread-mode .viewer-frame {
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+.result-container.spread-mode.is-zoomed .viewer-frame {
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+.result-container.spread-mode .spread-image { display: block; }
+.result-container.spread-mode img {
+    height: calc(100% * var(--zoom) / 100);
+    width: auto;
+    max-width: none;
+    margin: 0;
+}
+
+.result-container.compare-mode .viewer-frame {
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+}
+.result-container.compare-mode.is-zoomed .viewer-frame {
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+.result-container.compare-mode .compare-image {
+    display: block;
+    border-left: 2px solid var(--accent);
+    padding-left: 12px;
+}
+.result-container.compare-mode img {
+    height: calc(100% * var(--zoom) / 100);
+    width: auto;
+    max-width: none;
+    margin: 0;
+}
+
+/* ── Fit-width mode ── */
+/* 默认按高度铺满（height 驱动，width 自适应）。开启 data-fit="width" 后
+   改为按宽度铺满（width 驱动，height 自适应），纵向滚动浏览整页。
+   - 单页：图片宽度 = 容器宽度 × zoom
+   - 双页 / 对比：每张图宽度 = (容器宽度 - gap) / 2 × zoom，保持并排，
+     不让单张图各占 100% 导致横向溢出破坏跨页阅读。 */
+.result-container[data-fit="width"] .viewer-frame img {
+    width: calc(100% * var(--zoom) / 100);
+    height: auto;
+}
+.result-container[data-fit="width"].spread-mode .viewer-frame img,
+.result-container[data-fit="width"].compare-mode .viewer-frame img {
+    /* 容器两侧 padding 24px、gap 8px；每页约占半宽。zoom=100% 时铺满，
+       zoom>100% 时按比例放大并横向滚动。 */
+    width: calc((100% - 8px) / 2 * var(--zoom) / 100);
+    height: auto;
+}
+.result-container[data-fit="width"].spread-mode .viewer-frame,
+.result-container[data-fit="width"].compare-mode .viewer-frame {
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+/* ── Navigation arrows ── */
+/* Fixed to .result-container (not the scrollable frame) so they stay at the
+   screen edges regardless of scroll/zoom. Full column is pointer-events:none
+   so it never blocks the toolbar or drag-pan; only the icon is clickable. */
+.nav-arrow {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg-soft);
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity var(--transition), background var(--transition);
+    z-index: 15;
+    pointer-events: none;
+}
+.nav-arrow .icon {
+    width: 32px;
+    height: 32px;
+    pointer-events: auto;
+    padding: 18px;
+    box-sizing: content-box;
+    border-radius: 50%;
+}
+.nav-arrow:hover .icon { opacity: 1; background: var(--accent-soft); color: var(--accent); }
+.nav-arrow:focus-visible { outline: 2px solid var(--accent); opacity: 1; }
+#prevBtn { left: 0; }
+#nextBtn { right: 0; }
+
+/* ── Page indicator ── */
+.page-indicator {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 12px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font-size: 12px;
+    color: var(--fg-soft);
+    box-shadow: var(--shadow);
+    z-index: 16;
+    pointer-events: none;
+}
+
+/* ── Viewer toolbar ── */
+.viewer-toolbar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    z-index: 20;
+}
+.zoom-display {
+    min-width: 48px;
+    text-align: center;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--fg-soft);
+}
+
+/* ── Reading progress bar ── */
+.reading-progress {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: transparent;
+    z-index: 17;
+    pointer-events: none;
+}
+.reading-progress-bar {
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width 200ms ease;
+}
+
+/* ── Sidebars ── */
+.sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 320px;
+    max-width: 85vw;
+    background: var(--bg-elev);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-strong);
+    transform: translateX(-100%);
+    transition: transform var(--transition);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+}
+.sidebar.active { transform: translateX(0); }
+.sidebar-right {
+    left: auto; right: 0;
+    border-right: none;
+    border-left: 1px solid var(--border);
+    transform: translateX(100%);
+}
+.sidebar-right.active { transform: translateX(0); }
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.sidebar-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.sidebar-header-actions { display: flex; gap: 6px; align-items: center; }
+
+.sidebar-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+/* ── Thumbnail bar ── */
+.thumbnail-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 0;
+    background: var(--bg-elev);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+    transition: height var(--transition);
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+}
+.thumbnail-bar.expanded { height: 120px; }
+.thumb-toggle {
+    position: absolute;
+    top: -36px;
+    left: 16px;
+    width: 36px; height: 36px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow);
+}
+.thumbnail-track {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    padding: 8px 0;
+}
+.thumb-spacer {
+    position: relative;
+    height: 100%;
+    min-width: 100%;
+}
+
+/* ── Loading overlay ── */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #fff;
+    z-index: 1000;
+}
+.loading-overlay p { margin: 0; font-size: 14px; }
+.spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toasts ── */
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 2000;
+    pointer-events: none;
+}
+.toast {
+    padding: 10px 18px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--fg-muted);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-strong);
+    font-size: 13px;
+    color: var(--fg);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 200ms ease, transform 200ms ease;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-info { border-left-color: var(--fg-muted); }
+.toast-success { border-left-color: #2ea043; }
+.toast-warn { border-left-color: #d29922; }
+.toast-error { border-left-color: var(--accent); }
+
+/* ── Notes ── */
+.note-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    background: var(--bg);
+}
+.note-text {
+    font-size: 13px;
+    color: var(--fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.note-meta {
+    font-size: 11px;
+    color: var(--fg-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.note-actions { display: flex; gap: 6px; }
+.note-edit, .note-delete {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+.note-edit { color: var(--accent); border-color: var(--accent); }
+.note-delete { color: var(--fg-muted); }
+
+/* ── Responsive ── */
+@media (max-width: 720px) {
+    .search-container { padding: 8px 10px; gap: 6px; }
+    .search-filter { order: 5; width: 100%; overflow-x: auto; }
+    .filter-chip { white-space: nowrap; }
+    .viewer-frame { padding: 24px 48px; }
+    .nav-arrow { width: 48px; }
+    .viewer-toolbar { top: 8px; right: 8px; }
+    .dict-selector { max-width: 110px; }
+    .settings-panel {
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-width: none;
+    }
+}

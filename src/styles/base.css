@@ -1,0 +1,116 @@
+/* ============================================================
+   base.css — Reset, variables, defaults
+   ============================================================ */
+
+/* 京華老宋体 — split into two font files (v3a + v3b) for CJK coverage */
+@font-face {
+    font-family: "KingHwaOldSong";
+    src: url("/assets/fonts/kinghwaoldsong-v3a.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "KingHwaOldSong2";
+    src: url("/assets/fonts/kinghwaoldsong-v3b.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    /* Accent (overridable via custom theme color) */
+    --accent: #ec0015;
+    --accent-soft: rgba(236, 0, 21, 0.12);
+    --accent-fg: #ffffff;
+
+    /* Light theme (default) */
+    --bg: #fdfcf8;
+    --bg-elev: #ffffff;
+    --bg-soft: #f5f3ec;
+    --fg: #1c1a17;
+    --fg-soft: #5b574f;
+    --fg-muted: #9a938a;
+    --border: #e3ded2;
+    --border-strong: #c9c1b1;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+    --shadow-strong: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+    /* Layout */
+    --header-h: 64px;
+    --radius: 6px;
+    --radius-lg: 10px;
+    --transition: 160ms ease;
+
+    /* Typography */
+    --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-scale: 1;
+    --font-size: calc(15px * var(--font-scale));
+    --font-mono: "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+    /* Viewer */
+    --zoom: 100;
+    --rotation: 0deg;
+    --viewer-bg: #efeae0;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    font-family: var(--font);
+    font-size: var(--font-size);
+    color: var(--fg);
+    background: var(--bg);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+}
+
+button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+img { display: block; max-width: 100%; }
+
+ul { margin: 0; padding-left: 1.2em; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
+
+mark {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 2px;
+    padding: 0 1px;
+}
+
+[hidden] { display: none !important; }
+
+.sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0);
+    white-space: nowrap; border: 0;
+}

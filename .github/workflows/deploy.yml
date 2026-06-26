@@ -1,0 +1,70 @@
+name: Build & Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 允许 GITHUB_TOKEN 部署到 Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时刻只允许一个部署在跑，避免并发覆盖
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        env:
+          # 远程数据仓库位置（构建时注入，运行时 config.ts 用它回退加载配置与数据）
+          # ⚠️ 不设默认值：用户必须显式配置自己的数据仓库，避免指向他人的版权数据
+          # 在 Settings → Secrets and variables → Actions → Variables 添加 VITE_REMOTE_OWNER/REPO
+          # 若未配置，发行版将仅依赖本地 data/ 目录（发布版通常无数据，需自行部署数据仓库）
+          VITE_REMOTE_OWNER: ${{ vars.VITE_REMOTE_OWNER }}
+          VITE_REMOTE_REPO: ${{ vars.VITE_REMOTE_REPO }}
+          VITE_REMOTE_BRANCH: ${{ vars.VITE_REMOTE_BRANCH || 'main' }}
+          VITE_REMOTE_BASEPATH: ${{ vars.VITE_REMOTE_BASEPATH || 'data' }}
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

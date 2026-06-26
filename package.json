@@ -1,0 +1,34 @@
+{
+  "name": "dictkit-pro",
+  "version": "3.0.0",
+  "description": "汉语字典词典在线检索（Vite + TypeScript 重构版）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 8765",
+    "serve": "vite preview --port 8765 --host",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["汉语词典", "字典", "拼音检索", "王力古汉语字典", "规范汉字表"],
+  "author": "dictkit-pro",
+  "license": "MIT",
+  "homepage": "https://dictkit.github.io/dictkit-pro/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dictkit/dictkit-pro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dictkit/dictkit-pro/issues"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0",
+    "vite-plugin-pwa": "^0.20.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.12.0",
+    "jsdom": "^24.0.0"
+  }
+}
