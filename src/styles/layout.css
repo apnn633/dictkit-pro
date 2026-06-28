@@ -169,11 +169,16 @@ body {
     /* 词典扫描页为 1-bit 黑白高分辨率图（最高 6471×9542）。缩小显示时
        默认双线性插值会让文字笔画发灰断裂。-webkit-optimize-contrast 让
        WebKit/Blink 用高质量重采样，显著改善 1-bit 文字清晰度；
-       不识别该值的浏览器回退到前面的 auto。 */
-    image-rendering: auto;
+       其他浏览器不认识此值会自动回退到默认 image-rendering（auto），
+       无需显式声明，避免 Lighthouse 报告标准/前缀属性顺序问题。 */
     image-rendering: -webkit-optimize-contrast;
 }
 .spread-image, .compare-image { display: none; }
+
+/* 占位图透明度：viewer.ts 加载完成后会用内联 style.opacity 覆盖为 1。
+   用 class 替代 HTML 内联 style，满足 Lighthouse "CSS inline styles
+   should not be used" 审计。spread/compare 图初始 display:none，opacity 无影响。 */
+.img-placeholder { opacity: 0.3; }
 
 .result-container.spread-mode .viewer-frame {
     gap: 8px;

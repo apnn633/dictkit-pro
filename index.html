@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="汉语字典词典在线版：现代汉语词典、现代汉语规范词典、王力古汉语字典、规范汉字表手册。支持拼音、字词、页码检索，附阅读/浏览/搜索增强、对比模式、批注笔记、自定义主题与字体。">
   <meta name="keywords" content="汉语词典,汉语字典,词典在线,字词检索,拼音检索,王力古汉语字典,规范汉字表">
   <meta name="author" content="dictkit-pro">
@@ -106,7 +106,7 @@
       </div>
     </div>
 
-    <div id="searchResult" class="search-result" role="status" aria-live="polite"></div>
+    <div id="searchResult" class="search-result" role="status"></div>
   </header>
 
   <!-- 拼音声调提示弹窗 -->
@@ -169,7 +169,7 @@
   </aside>
 
   <!-- 缩略图导航条 -->
-  <div class="thumbnail-bar" id="thumbnailBar" aria-label="缩略图导航">
+  <div class="thumbnail-bar" id="thumbnailBar" role="region" aria-label="缩略图导航">
     <button class="thumb-toggle" id="thumbToggle" title="缩略图导航" data-i18n-title="thumbToggle">
       <span class="icon icon-grid" aria-hidden="true"></span>
     </button>
@@ -184,9 +184,9 @@
   <!-- 主查看区 -->
   <main class="result-container" id="resultContainer">
     <div class="viewer-frame" id="viewerFrame">
-      <img id="mainImage" alt="词典页面" src="./assets/0001.png" width="647" height="955" style="opacity: 0.3;">
-      <img id="mainImage2" alt="词典页面对页" class="spread-image" src="" width="647" height="955" style="opacity: 0;">
-      <img id="compareImage" alt="对比词典页面" class="compare-image" src="" width="647" height="955" style="opacity: 0;">
+      <img id="mainImage" alt="词典页面" src="./assets/0001.png" width="647" height="955" class="img-placeholder">
+      <img id="mainImage2" alt="词典页面对页" class="spread-image img-placeholder" src="" width="647" height="955">
+      <img id="compareImage" alt="对比词典页面" class="compare-image img-placeholder" src="" width="647" height="955">
     </div>
 
     <!-- Nav arrows live OUTSIDE the scrollable .viewer-frame so they stay

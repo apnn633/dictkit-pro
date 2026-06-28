@@ -122,8 +122,12 @@ export async function toggleFitWidth(): Promise<void> {
 
 /** 构造带标签的一行设置项。 */
 function row(label: string, control: HTMLElement): HTMLElement {
+  // 关联 label 与 control：有 id 时设置 for 属性，满足无障碍审计
+  // （Form elements must have labels / No label associated with a form field）。
+  const labelEl = h("label", { class: "settings-label" }, [label]);
+  if (control.id) labelEl.setAttribute("for", control.id);
   return h("div", { class: "settings-row" }, [
-    h("label", { class: "settings-label" }, [label]),
+    labelEl,
     control,
   ]);
 }

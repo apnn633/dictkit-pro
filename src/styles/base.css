@@ -53,6 +53,11 @@ html, body {
     margin: 0;
     padding: 0;
     height: 100%;
+    /* 标准属性 + WebKit 前缀：防止移动端横屏时字号被自动放大。
+       text-size-adjust 为标准属性（Chrome 54+/Edge 79+ 认识），
+       -webkit-text-size-adjust 兼容旧 WebKit/Safari。 */
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
