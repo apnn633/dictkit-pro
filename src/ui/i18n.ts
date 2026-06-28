@@ -103,6 +103,9 @@ const translations: Record<Lang, Record<string, string>> = {
     pageParamInvalid: "页码参数格式异常或超出范围",
     setHistoryLimit: "历史上限",
     historyLimitHint: "超过此条数自动删除最旧记录（0=用默认值）",
+    setClearCache: "清理缓存",
+    clearCacheHint: "清除图片缓存（含离线缓存）与内存缓存，不影响设置/书签/历史",
+    cacheCleared: "缓存已清理，正在刷新……",
   },
   en: {
     appTitle: "Chinese Dictionary Online",
@@ -197,6 +200,9 @@ const translations: Record<Lang, Record<string, string>> = {
     pageParamInvalid: "Page parameter is malformed or out of range",
     setHistoryLimit: "History Limit",
     historyLimitHint: "Auto-deletes oldest entries beyond this count (0=use default)",
+    setClearCache: "Clear Cache",
+    clearCacheHint: "Clears image cache (incl. offline) and in-memory cache. Settings/bookmarks/history are kept.",
+    cacheCleared: "Cache cleared, refreshing…",
   },
 };
 

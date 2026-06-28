@@ -5,6 +5,7 @@ import { byId, h } from "../utils/dom.ts";
 import { state } from "../core/state.ts";
 import * as store from "../utils/store.ts";
 import { clearProxyCache } from "../core/data-loader.ts";
+import { clearAllImageCache } from "../core/image-loader.ts";
 import { toast } from "./toast.ts";
 import { t } from "./i18n.ts";
 import { trimHistoryToLimit, renderHistory } from "./history.ts";
@@ -261,6 +262,35 @@ function buildPanel(): void {
     h("span", { class: "settings-hint" }, [t("historyLimitHint")]),
   ]);
 
+  // 清理缓存：SW 持久化缓存（dictkit-images / dictkit-metadata）+ 全部图片内存缓存 + 代理健康状态
+  const clearCacheBtn = h("button", { type: "button", class: "settings-action-btn", id: "clearCacheBtn" }, [t("setClearCache")]);
+  clearCacheBtn.addEventListener("click", async () => {
+    try {
+      // 1) SW 持久化缓存（图片 + 元数据）
+      if ("caches" in window) {
+        await Promise.all([
+          caches.delete("dictkit-images"),
+          caches.delete("dictkit-metadata"),
+        ]);
+      }
+      // 2) 内存缓存（所有词典的图片 URL 缓存、在飞请求、熔断记录）
+      clearAllImageCache();
+      // 3) 代理健康状态 + JSON 路径熔断
+      clearProxyCache();
+      toast(t("cacheCleared"), "success");
+      // 稍候刷新以让当前页图片重新加载
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      console.warn("clear cache failed:", err);
+      toast(t("cacheCleared"), "info");
+    }
+  });
+  const clearCacheRow = h("div", { class: "settings-row settings-row-stack" }, [
+    h("label", { class: "settings-label" }, [t("setClearCache")]),
+    clearCacheBtn,
+    h("span", { class: "settings-hint" }, [t("clearCacheHint")]),
+  ]);
+
   panel.append(
     row(t("setFont"), fontSelect),
     row(t("setCustomFont"), fontInput),
@@ -271,6 +301,7 @@ function buildPanel(): void {
     row(t("setLayout"), spreadSelect),
     fitRow,
     historyLimitRow,
+    clearCacheRow,
   );
 }
 

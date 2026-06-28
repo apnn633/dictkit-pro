@@ -214,3 +214,18 @@ export function clearDictCache(repo: string): void {
     if (key.startsWith(prefix)) failedImages.delete(key);
   }
 }
+
+/**
+ * 清空全部图片内存缓存与在飞请求（所有词典）。
+ * 供设置面板「清理缓存」按钮调用：清空 imageCache / loadingPromises /
+ * loadingControllers（主动 abort）/ preloadedImages / failedImages。
+ * 不影响 SW 持久化缓存（由调用方另行 caches.delete）。
+ */
+export function clearAllImageCache(): void {
+  for (const [, controller] of state.loadingControllers) controller.abort();
+  state.imageCache.clear();
+  state.loadingPromises.clear();
+  state.loadingControllers.clear();
+  state.preloadedImages.clear();
+  failedImages.clear();
+}

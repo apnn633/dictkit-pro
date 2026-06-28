@@ -170,6 +170,21 @@
     color: var(--fg-muted);
     line-height: 1.4;
 }
+.settings-action-btn {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.15s, color 0.15s;
+}
+.settings-action-btn:hover { background: var(--accent); color: #fff; }
+.settings-action-btn:active { transform: translateY(1px); }
 
 /* ── Toggle switch (settings) ── */
 .settings-switch {
