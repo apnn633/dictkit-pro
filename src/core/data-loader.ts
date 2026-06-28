@@ -109,23 +109,35 @@ export function clearProxyCache(): void {
   for (const k of Object.keys(state.proxyState)) {
     state.proxyState[k] = { lastSuccess: null, lastSuccessTime: 0, failed: new Set<string>() };
   }
-  // 一并清空路径熔断集合，让切换数据源后能重新尝试
+  // 一并清空路径熔断集合与已加载缓存，让切换数据源后能重新尝试
   failedPaths.clear();
+  loadedPaths.clear();
 }
 
 /**
  * 已彻底失败（所有源都试过且都失败）的 logicalPath 集合。
  * 同一会话内不重复请求，避免配置错误时无谓地刷请求。
- * clearDictCache / clearProxyCache 时清空（切词典后重置）。
+ * clearProxyCache 时清空（切数据源后重置）。
  */
 const failedPaths = new Set<string>();
 
+/**
+ * 已成功加载的 logicalPath → 数据 的内存缓存。
+ * 避免对同一文件反复请求（如多次 loadDictData / 搜索触发）。
+ * clearProxyCache 时清空。
+ */
+const loadedPaths = new Map<string, unknown>();
+
 /** 从最佳可用来源加载一个 JSON 数据文件。 */
 export async function loadJSON(repo: string, logicalPath: string, kind = "metadata"): Promise<unknown> {
-  // 熔断：若该路径已彻底失败过，直接抛错，不再发请求
   const failKey = `${repo}/${logicalPath}`;
+  // 熔断：若该路径已彻底失败过，直接抛错，不再发请求
   if (failedPaths.has(failKey)) {
     throw new Error(`路径已熔断（所有来源均失败）：${failKey}`);
+  }
+  // 命中已加载缓存，直接返回，避免重复请求
+  if (loadedPaths.has(failKey)) {
+    return loadedPaths.get(failKey);
   }
   const candidates = getCandidateUrls(repo, logicalPath);
   let current = getBestProxy(candidates, kind);
@@ -142,6 +154,7 @@ export async function loadJSON(repo: string, logicalPath: string, kind = "metada
           throw new Error("响应非 JSON 对象/数组");
         }
         markSuccess(current, kind);
+        loadedPaths.set(failKey, data);
         return data;
       }
     } catch (err) {
@@ -160,21 +173,41 @@ export async function loadJSON(repo: string, logicalPath: string, kind = "metada
 /**
  * 加载某本字典的全部数据文件（pinyin/chars/words/toc），
  * 并挂到 state.dicts[repo] 上。
+ *
+ * 去重保护：
+ * - 若该词典所有必需文件均已加载（dict.pinyin 等非 null），直接返回
+ * - 若该词典正在加载中，复用进行中的 promise，避免并发重复请求
  */
+const pendingDictLoads = new Map<string, Promise<void>>();
+
 export async function loadDictData(repo: string): Promise<void> {
   const dict = state.dicts[repo];
   if (!dict) {
     console.warn(`词典未注册：${repo}`);
     return;
   }
-  const tasks = state.files.map(async file => {
-    try {
-      const data = await loadJSON(repo, `data/${file.path}`);
-      dict[file.key] = data as Record<string, unknown>;
-    } catch (err) {
-      console.warn(`词典 ${repo} 缺少 ${file.path}：`, err);
-      dict[file.key] = null;
-    }
-  });
-  await Promise.all(tasks);
+  // 已全部加载完成则跳过
+  if (state.files.every(f => dict[f.key] != null)) return;
+  // 复用进行中的加载，避免并发重复请求
+  const existing = pendingDictLoads.get(repo);
+  if (existing) return existing;
+
+  const promise = (async (): Promise<void> => {
+    const tasks = state.files.map(async file => {
+      try {
+        const data = await loadJSON(repo, `data/${file.path}`);
+        dict[file.key] = data as Record<string, unknown>;
+      } catch (err) {
+        console.warn(`词典 ${repo} 缺少 ${file.path}：`, err);
+        dict[file.key] = null;
+      }
+    });
+    await Promise.all(tasks);
+  })();
+  pendingDictLoads.set(repo, promise);
+  try {
+    await promise;
+  } finally {
+    pendingDictLoads.delete(repo);
+  }
 }
