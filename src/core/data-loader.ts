@@ -81,15 +81,16 @@ function proxyState(kind: string): ProxyState {
   );
 }
 
-/** 从候选中挑出最优来源：上次成功且未过期者优先，否则取首个未失败者。 */
+/** 从候选中挑出最优来源：上次成功且未过期且未失败者优先，否则取首个未失败者。 */
 function getBestProxy(candidates: Candidate[], kind: string): Candidate | null {
   const ps = proxyState(kind);
   const now = Date.now();
+  if (ps.lastSuccess && now - ps.lastSuccessTime >= PROXY_CACHE_DURATION) ps.failed.clear();
   if (ps.lastSuccess && now - ps.lastSuccessTime < PROXY_CACHE_DURATION) {
     const found = candidates.find(c => c.source.id === ps.lastSuccess);
-    if (found) return found;
+    // 关键：lastSuccess 本轮已失败时不能再选它，否则 while(current) 会死循环
+    if (found && !ps.failed.has(found.source.id)) return found;
   }
-  if (ps.lastSuccess && now - ps.lastSuccessTime >= PROXY_CACHE_DURATION) ps.failed.clear();
   return candidates.find(c => !ps.failed.has(c.source.id)) || null;
 }
 
@@ -141,7 +142,9 @@ export async function loadJSON(repo: string, logicalPath: string, kind = "metada
   }
   const candidates = getCandidateUrls(repo, logicalPath);
   let current = getBestProxy(candidates, kind);
-  while (current) {
+  // 安全上限：候选数 × 2，防止任何未预见的逻辑漏洞导致死循环刷请求
+  let safety = candidates.length * 2 + 2;
+  while (current && safety-- > 0) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
@@ -165,6 +168,7 @@ export async function loadJSON(repo: string, logicalPath: string, kind = "metada
     markFail(current, kind);
     current = getBestProxy(candidates, kind);
   }
+  if (safety < 0) console.error(`loadJSON 安全上限触发（疑似死循环）：${failKey}`);
   // 所有来源均失败：加入熔断集合，同会话不再重试
   failedPaths.add(failKey);
   throw new Error(`所有来源加载失败：${repo}/${logicalPath}`);
