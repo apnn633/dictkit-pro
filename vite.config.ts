@@ -62,6 +62,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2,ico}"],
+        // manifest icons（logo-192/512）已由 vite-plugin-pwa 以带 revision 的形式预缓存，
+        // globPatterns 会再以无 revision 形式匹配它们，导致 add-to-cache-list 冲突报错。
+        // 在此排除，避免 SW 注册中断。
+        globIgnores: ["assets/logos/logo-192.png", "assets/logos/logo-512.png"],
         // Cache dictionary images at runtime so previously viewed pages work offline
         runtimeCaching: [
           {

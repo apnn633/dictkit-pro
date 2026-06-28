@@ -65,17 +65,57 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (list) list.textContent = t("noDictConfig");
             return;
         }
-        await loadDictData(repos[0]);
+
+        // 性能优化（Lighthouse Speed Index 7.4s 根因）：首屏图片仅需 config
+        // （basePath/prefix/suffix），不依赖 pinyin/chars/words/toc 这 4 个搜索
+        // 数据 JSON。原序列 await loadDictData(repos[0]) 阻塞了 showImage，导致
+        // LCP 被远程 JSON 拖到 7s+。现将首屏图片与搜索数据并行启动，并在图片
+        // 就绪后立即隐藏 loading overlay，让用户尽早看到内容。
+        const params = getURLParams();
+        const initialRepo = params.dict && state.dicts[params.dict] ? params.dict : repos[0];
+        state.currentDict = initialRepo;
+        const sel0 = byId<HTMLSelectElement>("dictSelector");
+        if (sel0) sel0.value = initialRepo;
+        const initialDict = state.dicts[initialRepo];
+        const logo0 = byId<HTMLImageElement>("dictLogo");
+        if (logo0 && initialDict) {
+            logo0.src = initialDict.logo;
+            logo0.alt = `${initialDict.name} Logo`;
+        }
+        // 确定首屏页码：URL ?page= > 上次位置 > 首页
+        let initialPage: string;
+        if (params.page) {
+            const cleaned = params.page.replace(/^0+/, "") || params.page;
+            initialPage = normalizePageId(cleaned, initialRepo) || getFirstPageId(initialRepo);
+        } else {
+            initialPage = getLastPosition(initialRepo) || getFirstPageId(initialRepo);
+        }
+        state.currentPage = initialPage;
+
+        // 并行启动：首屏图片（仅需 config） + 搜索数据（sidebar/search 需要）
+        const firstImagePromise = showImage(state.defaults.preloadCount ?? 2);
+        const dataPromise = loadDictData(initialRepo);
+
+        // 首屏图片就绪后立即隐藏 loading overlay（LCP/Speed Index 优化），
+        // 不再等待 4 个搜索数据 JSON 全部下载完成。
+        await firstImagePromise;
+        showLoading(false);
+
+        // 搜索数据就绪后构建目录侧栏
+        await dataPromise;
         await setupSidebar();
 
         // 懒加载剩余词典
-        for (const repo of repos.slice(1)) {
+        for (const repo of repos) {
+            if (repo === initialRepo) continue;
             pendingDictLoads[repo] = loadDictData(repo).catch(err => {
                 console.warn(`后台加载失败 ${repo}:`, err);
             }).finally(() => { delete pendingDictLoads[repo]; });
         }
 
-        // 从 URL 参数或保存的上次位置初始化
+        // 从 URL 参数初始化：?query= 触发搜索（数据已就绪）；
+        // ?dict=/?page= 已在上方处理，此处 initFromURL 多为幂等回放（图片缓存命中），
+        // 并补做 recordHistory / updateProgress。
         await initFromURL();
 
         document.body.dataset.ready = "true";
