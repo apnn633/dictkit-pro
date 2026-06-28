@@ -20,9 +20,10 @@
 - **阅读模式**：单页 / 双页跨页 / 词典对照
 - **缩放交互**：滚轮缩放（光标锚点）、拖拽平移、移动端捏合手势、适合高度/适合宽度切换
 - **数据多源**：本地 + 远程镜像（jsDelivr / GitHub Raw / GHProxy）自动故障转移
+- **熔断防刷**：某文件/图片所有源均失败后记入熔断集合，同一会话内不再重复请求，避免配置错误时刷屏（切词典/切数据源后自动重置）
 - **PWA 离线**：已浏览页面与元数据缓存，断网可读
 - **个性化**：主题（浅/深/护眼/高对比）、自定义主题色、自定义字体上传、字号调节、适合高度/宽度切换
-- **辅助功能**：阅读历史、书签收藏、按页批注、缩略图导航、目录、i18n 中英切换
+- **辅助功能**：阅读历史（可设上限自动删除最旧记录）、书签收藏、按页批注、缩略图导航、目录、i18n 中英切换
 - **键盘快捷键**：翻页、缩放、旋转、全屏等
 
 ## 技术栈
@@ -126,9 +127,10 @@ npm run build
 
 2. **（可选）配置远程数据仓库位置**：在仓库 Settings → Secrets and variables → Actions → Variables 添加：
    - `VITE_REMOTE_OWNER` = 承载数据的 GitHub 用户/组织名
-   - `VITE_REMOTE_REPO` = 数据仓库名
+   - `VITE_REMOTE_REPO` = 数据仓库名（集中仓库模式，所有词典同一仓库）
    - `VITE_REMOTE_BRANCH` = 分支（默认 main）
    - `VITE_REMOTE_BASEPATH` = 数据在仓库内的路径（默认 data）
+   - `VITE_REMOTE_PERREPO` = 是否每词典独立仓库（`true`/`false`，默认 `false`）。设为 `true` 时 `VITE_REMOTE_REPO` 被忽略，按 `{owner}/{词典repo}/{basePath}` 拼接
 
    > ⚠️ **请确保你有权分发所指向的数据仓库内容**。若数据受版权保护，请勿配置此项或将其设为私有仓库。
 
@@ -138,11 +140,22 @@ npm run build
 
 #### 运行时数据加载流程
 
-1. 先尝试 `data/dicts.json`（本地，发布版通常 404）
-2. 若配置了远程数据仓库，回退到 `https://cdn.jsdelivr.net/gh/{owner}/{repo}@{branch}/{basePath}/dicts.json`
-3. 再回退 jsDelivr Fastly、GitHub Raw
+**本地开发版**（`npm run dev`）：
+1. 优先尝试 `data/dicts.json`（本地）
+2. 失败则回退到远程候选源
+
+**发行版**（GitHub Pages）：
+1. **不尝试本地** `data/dicts.json`（避免 GitHub Pages 伪 200 + HTML 404 页导致解析失败）
+2. 直接从远程候选源加载，顺序为：
+   - `https://cdn.jsdelivr.net/gh/{owner}/{repo}@{branch}/{basePath}/dicts.json`（集中仓库）
+   - 或 `https://cdn.jsdelivr.net/gh/{owner}/{词典repo}@{branch}/{basePath}/dicts.json`（perRepo 模式）
+3. 依次回退 jsDelivr Fastly、GitHub Raw、jsdmirror、GHProxy
 
 词典图片与检索数据同样走多源回退，单一 CDN 故障不影响使用。
+
+> 🔧 **perRepo 模式**：当数据分散在每本词典各自的仓库（如 `dictkit/xiandai`、`dictkit/guifan`）时，设置 `VITE_REMOTE_PERREPO=true`，URL 按 `{owner}/{词典repo}/{basePath}` 拼接；集中仓库模式则按 `{owner}/{repo}/{basePath}/{词典repo}` 拼接。
+
+> 🛡️ **熔断机制**：某文件/图片在所有候选源都失败后，会被记入熔断集合，同一会话内不再重复请求（避免配置错误时刷屏）。切换词典或数据源后熔断记录自动重置。
 
 ---
 
